@@ -199,13 +199,9 @@ impl<'a> Parser<'a> {
     fn parse_primary_expression(&mut self) -> ParserResult<ParserExpressionTree> {
         let token_location = self.current_location();
         match self.current().clone() {
-            Token::Int(value) => {
+            Token::Number(value) => {
                 self.next()?;
-                Ok(ParserExpressionTree::new(token_location, ParserExpressionTreeData::Number(NumericConstant::from_i64(value))))
-            }
-            Token::Float(value) => {
-                self.next()?;
-                Ok(ParserExpressionTree::new(token_location, ParserExpressionTreeData::Number(NumericConstant::from_f64(value))))
+                Ok(ParserExpressionTree::new(token_location, ParserExpressionTreeData::Number(value)))
             }
             Token::Identifier(identifier) => self.parse_identifier_expression(identifier.clone()),
             Token::LeftParentheses => {
@@ -312,16 +308,6 @@ impl<'a> Parser<'a> {
             Ok(identifier)
         } else {
             Err(self.create_error(ParserErrorType::ExpectedIdentifier))
-        }
-    }
-
-    fn consume_int(&mut self) -> ParserResult<i64> {
-        if let Token::Int(value) = self.current() {
-            let value = *value;
-            self.next()?;
-            Ok(value)
-        } else {
-            Err(self.create_error(ParserErrorType::ExpectedInt))
         }
     }
 

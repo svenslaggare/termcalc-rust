@@ -4,13 +4,12 @@ use std::iter::{FromIterator, Peekable};
 use std::fmt::Formatter;
 
 use lazy_static::lazy_static;
-
+use crate::parsing::{NumericConstant, NumericConstantChar};
 use crate::parsing::operator::Operator;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
-    Int(i64),
-    Float(f64),
+    Number(NumericConstant),
     Operator(Operator),
     Identifier(String),
     LeftParentheses,
@@ -280,17 +279,18 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
 
             state.add(Token::Identifier(identifier));
         } else if current.is_numeric() {
-            let mut number = String::new();
-            number.push(current);
+            let mut chars = Vec::new();
+            let base = 10;
+            chars.push(NumericConstantChar::from_char(current).unwrap());
             let mut has_dot = false;
 
             loop {
                 match state.char_iterator.peek() {
                     Some(next) if next.is_numeric() => {
-                        number.push(state.next_char().unwrap());
+                        chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
                     }
                     Some('E') if has_dot => {
-                        number.push(state.next_char().unwrap());
+                        chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
                     }
                     Some(next) if next == &'.' => {
                         if has_dot {
@@ -298,7 +298,7 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
                         }
 
                         has_dot = true;
-                        number.push(state.next_char().unwrap());
+                        chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
                     }
                     _ => {
                         break
@@ -306,11 +306,13 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
                 };
             }
 
-            if has_dot {
-                state.add(Token::Float(f64::from_str(&number).map_err(|_err| ParserError::new(state.location(), ParserErrorType::FloatConvertError))?));
-            } else {
-                state.add(Token::Int(i64::from_str(&number).map_err(|_err| ParserError::new(state.location(), ParserErrorType::IntConvertError))?));
-            }
+            state.add(Token::Number(NumericConstant::new(chars, base)))
+
+            // if has_dot {
+            //     state.add(Token::Float(f64::from_str(&number).map_err(|_err| ParserError::new(state.location(), ParserErrorType::FloatConvertError))?));
+            // } else {
+            //     state.add(Token::Int(i64::from_str(&number).map_err(|_err| ParserError::new(state.location(), ParserErrorType::IntConvertError))?));
+            // }
         } else if current == '(' {
             state.add(Token::LeftParentheses);
         } else if current == ')' {
@@ -353,9 +355,9 @@ fn test_tokenize1() {
             Token::Operator(Operator::Single('+')),
             Token::Identifier("caba".to_string()),
             Token::Operator(Operator::Single('+')),
-            Token::Int(134),
+            Token::Number(NumericConstant::from_i64(134)),
             Token::Operator(Operator::Single('+')),
-            Token::Int(12),
+            Token::Number(NumericConstant::from_i64(12)),
             Token::End
         ],
         tokens.unwrap()
@@ -373,7 +375,7 @@ fn test_tokenize2() {
             Token::Comma,
             Token::Identifier("b".to_string()),
             Token::Comma,
-            Token::Int(4),
+            Token::Number(NumericConstant::from_i64(4)),
             Token::RightParentheses,
             Token::End
         ],
@@ -388,7 +390,7 @@ fn test_tokenize3() {
         vec![
             Token::Identifier("a".to_string()),
             Token::Operator(Operator::Single('+')),
-            Token::Int(4),
+            Token::Number(NumericConstant::from_i64(4)),
             Token::End
         ],
         tokens.unwrap()
@@ -402,7 +404,7 @@ fn test_tokenize4() {
         vec![
             Token::Identifier("a".to_string()),
             Token::Operator(Operator::Dual('<', '=')),
-            Token::Int(4),
+            Token::Number(NumericConstant::from_i64(4)),
             Token::End
         ],
         tokens.unwrap()
@@ -414,7 +416,7 @@ fn test_tokenize6() {
     let tokens = tokenize_simple("4.0");
     assert_eq!(
         vec![
-            Token::Float(4.0),
+            Token::Number(NumericConstant::from_f64(4.0)),
             Token::End
         ],
         tokens.unwrap()
@@ -426,7 +428,18 @@ fn test_tokenize7() {
     let tokens = tokenize_simple("13.37E6");
     assert_eq!(
         vec![
-            Token::Float(13.37E6),
+            Token::Number(NumericConstant::new(
+                vec![
+                    NumericConstantChar::One,
+                    NumericConstantChar::Three,
+                    NumericConstantChar::DecimalPoint,
+                    NumericConstantChar::Three,
+                    NumericConstantChar::Seven,
+                    NumericConstantChar::Exponent,
+                    NumericConstantChar::Six
+                ],
+                10
+            )),
             Token::End
         ],
         tokens.unwrap()

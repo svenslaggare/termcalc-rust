@@ -72,10 +72,7 @@ impl NumberType for IntType {
                         write!(value, "{}", current).map_err(|_| NumberTypeError::ConstructionError)?;
                     }
                 }
-                NumericConstantChar::DecimalPoint => {
-                    break;
-                }
-                NumericConstantChar::ImaginaryUnit => {
+                NumericConstantChar::DecimalPoint | NumericConstantChar::ImaginaryUnit | NumericConstantChar::Exponent => {
                     break;
                 }
             }

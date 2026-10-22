@@ -186,7 +186,7 @@ impl NumberType for FloatType {
             match current {
                 NumericConstantChar::Zero | NumericConstantChar::One | NumericConstantChar::Two | NumericConstantChar::Three | NumericConstantChar::Four
                 | NumericConstantChar::Five | NumericConstantChar::Six | NumericConstantChar::Seven | NumericConstantChar::Eight | NumericConstantChar::Nine
-                | NumericConstantChar::DecimalPoint
+                | NumericConstantChar::DecimalPoint | NumericConstantChar::Exponent
                 => {
                     write!(value, "{}", current).map_err(|_| NumberTypeError::ConstructionError)?;
                 }
@@ -209,7 +209,22 @@ impl NumberType for FloatType {
 }
 
 #[test]
-fn test_to_value1() {
-    let int_type = FloatType::new();
-    assert_eq!(Ok(ResultValue::Float(13.37)), int_type.to_value(&NumericConstant::from_f64(13.37)));
+fn test_to_value() {
+    let float_type = FloatType::new();
+    assert_eq!(Ok(ResultValue::Float(13.37)), float_type.to_value(&NumericConstant::from_f64(13.37)));
+    assert_eq!(
+        Ok(ResultValue::Float(13.37E6)),
+        float_type.to_value(&NumericConstant::new(
+            vec![
+                NumericConstantChar::One,
+                NumericConstantChar::Three,
+                NumericConstantChar::DecimalPoint,
+                NumericConstantChar::Three,
+                NumericConstantChar::Seven,
+                NumericConstantChar::Exponent,
+                NumericConstantChar::Six
+            ],
+            10
+        ))
+    );
 }

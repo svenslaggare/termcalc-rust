@@ -22,7 +22,7 @@ impl NumericConstant {
     pub fn from_f64(value: f64) -> NumericConstant {
         NumericConstant::from_str(&f64_to_string_full(value)).unwrap()
     }
-    
+
     pub fn iter(&self) -> impl Iterator<Item=NumericConstantChar> {
         self.chars.iter().cloned()
     }
@@ -52,16 +52,9 @@ impl FromStr for NumericConstant {
         let mut chars = Vec::new();
         for (index, current) in text.chars().enumerate() {
             match current {
-                '0' => { chars.push(NumericConstantChar::Zero); },
-                '1' => { chars.push(NumericConstantChar::One); },
-                '2' => { chars.push(NumericConstantChar::Two); },
-                '3' => { chars.push(NumericConstantChar::Three); },
-                '4' => { chars.push(NumericConstantChar::Four); },
-                '5' => { chars.push(NumericConstantChar::Five); },
-                '6' => { chars.push(NumericConstantChar::Six); },
-                '7' => { chars.push(NumericConstantChar::Seven); },
-                '8' => { chars.push(NumericConstantChar::Eight); },
-                '9' => { chars.push(NumericConstantChar::Nine); },
+                '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => {
+                    chars.push(NumericConstantChar::from_char(current).unwrap());
+                }
                 '-' => {
                     if index > 0 && is_complex_mode {
                         is_complex_mode = true;
@@ -155,7 +148,37 @@ pub enum NumericConstantChar {
     MinusSign,
     PlusSign,
     DecimalPoint,
-    ImaginaryUnit
+    ImaginaryUnit,
+    Exponent
+}
+
+impl NumericConstantChar {
+    pub fn from_char(value: char) -> Option<NumericConstantChar> {
+        match value {
+            '0' => Some(NumericConstantChar::Zero),
+            '1' => Some(NumericConstantChar::One),
+            '2' => Some(NumericConstantChar::Two),
+            '3' => Some(NumericConstantChar::Three),
+            '4' => Some(NumericConstantChar::Four),
+            '5' => Some(NumericConstantChar::Five),
+            '6' => Some(NumericConstantChar::Six),
+            '7' => Some(NumericConstantChar::Seven),
+            '8' => Some(NumericConstantChar::Eight),
+            '9' => Some(NumericConstantChar::Nine),
+            'a' => Some(NumericConstantChar::A),
+            'b' => Some(NumericConstantChar::B),
+            'c' => Some(NumericConstantChar::C),
+            'd' => Some(NumericConstantChar::D),
+            'e' => Some(NumericConstantChar::E),
+            'f' => Some(NumericConstantChar::F),
+            '-' => Some(NumericConstantChar::MinusSign),
+            '+' => Some(NumericConstantChar::PlusSign),
+            '.' => Some(NumericConstantChar::DecimalPoint),
+            'i' => Some(NumericConstantChar::ImaginaryUnit),
+            'E' => Some(NumericConstantChar::Exponent),
+            _ => None
+        }
+    }
 }
 
 impl Display for NumericConstantChar {
@@ -180,7 +203,8 @@ impl Display for NumericConstantChar {
             NumericConstantChar::MinusSign => { write!(f, "-") }
             NumericConstantChar::PlusSign => { write!(f, "+") }
             NumericConstantChar::DecimalPoint => { write!(f, ".") }
-            NumericConstantChar::ImaginaryUnit => { write!(f, "i") }
+            NumericConstantChar::ImaginaryUnit => { write!(f, "i") },
+            NumericConstantChar::Exponent => { write!(f, "E") }
         }
     }
 }

@@ -15,13 +15,13 @@ fn test_advance_parser() {
         vec![
             Token::Identifier("a".to_string()),
             Token::Operator(Operator::Single('+')),
-            Token::Int(4)
+            Token::Number(NumericConstant::from_i64(4))
         ]
     );
 
     assert_eq!(&Token::Identifier("a".to_string()), parser.next().unwrap());
     assert_eq!(&Token::Operator(Operator::Single('+')), parser.next().unwrap());
-    assert_eq!(&Token::Int(4), parser.next().unwrap());
+    assert_eq!(&Token::Number(NumericConstant::from_i64(4)), parser.next().unwrap());
     assert_eq!(Err(ParserErrorType::ReachedEndOfTokens), parser.next().map_err(|err| err.error));
     assert_eq!(Err(ParserErrorType::ReachedEndOfTokens), parser.next().map_err(|err| err.error));
 }
@@ -35,7 +35,7 @@ fn test_parse_values() {
         &binary_operators,
         &unary_operators,
         vec![
-            Token::Int(4711),
+            Token::Number(NumericConstant::from_i64(4711)),
             Token::End
         ]
     ).parse().unwrap().tree;
@@ -49,7 +49,7 @@ fn test_parse_values() {
         &binary_operators,
         &unary_operators,
         vec![
-            Token::Float(13.37),
+            Token::Number(NumericConstant::from_f64(13.37)),
             Token::End
         ]
     ).parse().unwrap().tree;
