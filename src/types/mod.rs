@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+
 use crate::model::{EnvironmentScope, ResultValue};
 use crate::parsing::{BinaryOperators, NumericConstant, UnaryOperators};
 
@@ -14,14 +15,16 @@ pub trait NumberType {
 #[derive(Debug, Clone, PartialEq)]
 pub enum NumberTypeError {
     ConstructionError,
-    TooLargeValue
+    TooLargeValue,
+    NonDecimalBase
 }
 
 impl Display for NumberTypeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             NumberTypeError::ConstructionError => write!(f, "Failed to construct a number"),
-            NumberTypeError::TooLargeValue => write!(f, "This number is too large")
+            NumberTypeError::TooLargeValue => write!(f, "This number is too large"),
+            NumberTypeError::NonDecimalBase => write!(f, "Non decimal base")
         }
     }
 }

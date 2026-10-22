@@ -317,6 +317,11 @@ fn test_int1() {
 
     let mut engine = ExecutionEngine::new(NumberTypeId::Int);
     assert_eq!(
+        Ok(ResultValue::Int(255)),
+        engine.execute(&parse_str(ParsingContext::from_number_type(engine.number_type()), "0xFF").unwrap())
+    );
+
+    assert_eq!(
         Ok(ResultValue::Int(10)),
         engine.execute(&parse_str(ParsingContext::from_number_type(engine.number_type()), "3 + 7").unwrap())
     );
@@ -376,6 +381,11 @@ fn test_float1() {
     use crate::parsing::{parse_str, ParsingContext};
 
     let mut engine = ExecutionEngine::new(NumberTypeId::Float);
+    assert_eq!(
+        Ok(ResultValue::Float(13.37E6)),
+        engine.execute(&parse_str(ParsingContext::from_number_type(engine.number_type()), "13.37E6").unwrap())
+    );
+
     assert_eq!(
         Ok(ResultValue::Float(10.0)),
         engine.execute(&parse_str(ParsingContext::from_number_type(engine.number_type()), "3 + 7").unwrap())

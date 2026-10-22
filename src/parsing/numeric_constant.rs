@@ -14,6 +14,10 @@ impl NumericConstant {
             base
         }
     }
+    
+    pub fn base(&self) -> u32 {
+        self.base
+    }
 
     pub fn from_i64(value: i64) -> NumericConstant {
         NumericConstant::from_str(&value.to_string()).unwrap()

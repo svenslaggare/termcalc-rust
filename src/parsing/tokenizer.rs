@@ -231,6 +231,10 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
             result
         }
 
+        fn peek_char(&mut self) -> Option<&char> {
+            self.char_iterator.peek()
+        }
+
         fn location(&self) -> TokenLocation {
             TokenLocation { line: self.line, column: self.column }
         }
@@ -280,14 +284,38 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
             state.add(Token::Identifier(identifier));
         } else if current.is_numeric() {
             let mut chars = Vec::new();
-            let base = 10;
-            chars.push(NumericConstantChar::from_char(current).unwrap());
+            let base = if current == '0' {
+                match state.peek_char().cloned() {
+                    Some('b') => {
+                        state.next_char();
+                        2
+                    }
+                    Some('x') => {
+                        state.next_char();
+                        16
+                    }
+                    _ => {
+                        chars.push(NumericConstantChar::from_char(current).unwrap());
+                        10
+                    }
+                }
+            } else {
+                chars.push(NumericConstantChar::from_char(current).unwrap());
+                10
+            };
+
             let mut has_dot = false;
 
             loop {
-                match state.char_iterator.peek() {
-                    Some(next) if next.is_numeric() => {
+                match state.peek_char() {
+                    Some(next) if base == 10 && next.is_numeric() => {
                         chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
+                    }
+                    Some(next) if base == 2 && (next == &'0' || next == &'1') => {
+                        chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
+                    }
+                    Some(next) if base == 16 && is_hex_digit(*next) => {
+                        chars.push(NumericConstantChar::from_char(state.next_char().unwrap().to_ascii_lowercase()).unwrap());
                     }
                     Some('E') if has_dot => {
                         chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
@@ -338,9 +366,17 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
     Ok(state.tokens)
 }
 
+fn is_hex_digit(current: char) -> bool {
+    match current.to_ascii_lowercase() {
+        current if current.is_numeric() => true,
+        'a' | 'b' | 'c'| 'd' | 'e' | 'f' => true,
+        _ => false
+    }
+}
+
 #[test]
 fn test_tokenize1() {
-    let tokens = tokenize_simple("a1 + b + caba + 134 + 12");
+    let tokens = tokenize_simple("a1 + b + caba + 134 + 12 + 0");
     assert_eq!(
         vec![
             Token::Identifier("a1".to_string()),
@@ -352,6 +388,8 @@ fn test_tokenize1() {
             Token::Number(NumericConstant::from_i64(134)),
             Token::Operator(Operator::Single('+')),
             Token::Number(NumericConstant::from_i64(12)),
+            Token::Operator(Operator::Single('+')),
+            Token::Number(NumericConstant::from_i64(0)),
             Token::End
         ],
         tokens.unwrap()
@@ -434,6 +472,30 @@ fn test_tokenize7() {
                 ],
                 10
             )),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize8() {
+    let tokens = tokenize_simple("0xFF");
+    assert_eq!(
+        vec![
+            Token::Number(NumericConstant::new(vec![NumericConstantChar::F, NumericConstantChar::F], 16)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize9() {
+    let tokens = tokenize_simple("0b101");
+    assert_eq!(
+        vec![
+            Token::Number(NumericConstant::new(vec![NumericConstantChar::One, NumericConstantChar::Zero, NumericConstantChar::One], 2)),
             Token::End
         ],
         tokens.unwrap()

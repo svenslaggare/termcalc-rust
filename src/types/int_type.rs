@@ -1,5 +1,4 @@
 use std::fmt::Write;
-use std::str::FromStr;
 
 use crate::model::{EnvironmentScope, ResultValue};
 use crate::parsing::{BinaryOperator, BinaryOperators, NumericConstant, NumericConstantChar, Operator, UnaryOperator, UnaryOperators};
@@ -78,12 +77,22 @@ impl NumberType for IntType {
             }
         }
 
-        i64::from_str(&value).map_err(|_| NumberTypeError::TooLargeValue).map(|x| ResultValue::Int(x))
+        i64::from_str_radix(&value, constant.base()).map_err(|_| NumberTypeError::TooLargeValue).map(|x| ResultValue::Int(x))
     }
 }
 
 #[test]
 fn test_to_value1() {
-    let int_type = IntType::new();
-    assert_eq!(Ok(ResultValue::Int(4711)), int_type.to_value(&NumericConstant::from_i64(4711)));
+    assert_eq!(
+        Ok(ResultValue::Int(4711)),
+        IntType::new().to_value(&NumericConstant::from_i64(4711))
+    );
+}
+
+#[test]
+fn test_to_value2() {
+    assert_eq!(
+        Ok(ResultValue::Int(0xFF)),
+        IntType::new().to_value(&NumericConstant::new(vec![NumericConstantChar::F, NumericConstantChar::F], 16))
+    );
 }

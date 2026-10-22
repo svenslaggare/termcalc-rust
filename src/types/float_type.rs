@@ -181,6 +181,10 @@ impl NumberType for FloatType {
     }
 
     fn to_value(&self, constant: &NumericConstant) -> Result<ResultValue, NumberTypeError> {
+        if constant.base() != 10 {
+            return Err(NumberTypeError::NonDecimalBase);
+        }
+        
         let mut value = String::new();
         for (index, current) in constant.iter().enumerate() {
             match current {
@@ -209,12 +213,18 @@ impl NumberType for FloatType {
 }
 
 #[test]
-fn test_to_value() {
-    let float_type = FloatType::new();
-    assert_eq!(Ok(ResultValue::Float(13.37)), float_type.to_value(&NumericConstant::from_f64(13.37)));
+fn test_to_value1() {
+    assert_eq!(
+        Ok(ResultValue::Float(13.37)),
+        FloatType::new().to_value(&NumericConstant::from_f64(13.37))
+    );
+}
+
+#[test]
+fn test_to_value2() {
     assert_eq!(
         Ok(ResultValue::Float(13.37E6)),
-        float_type.to_value(&NumericConstant::new(
+        FloatType::new().to_value(&NumericConstant::new(
             vec![
                 NumericConstantChar::One,
                 NumericConstantChar::Three,
