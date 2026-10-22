@@ -1,4 +1,4 @@
-use std::str::{FromStr, Chars};
+use std::str::{Chars};
 use std::collections::HashSet;
 use std::iter::{FromIterator, Peekable};
 use std::fmt::Formatter;
@@ -307,12 +307,6 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
             }
 
             state.add(Token::Number(NumericConstant::new(chars, base)))
-
-            // if has_dot {
-            //     state.add(Token::Float(f64::from_str(&number).map_err(|_err| ParserError::new(state.location(), ParserErrorType::FloatConvertError))?));
-            // } else {
-            //     state.add(Token::Int(i64::from_str(&number).map_err(|_err| ParserError::new(state.location(), ParserErrorType::IntConvertError))?));
-            // }
         } else if current == '(' {
             state.add(Token::LeftParentheses);
         } else if current == ')' {
