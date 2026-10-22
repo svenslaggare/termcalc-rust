@@ -1,19 +1,23 @@
 use std::fmt::{Display, Formatter};
 use std::fmt::Write;
+use std::str::FromStr;
 
 use crate::execution::engine::{ExecutionEngine, ExecutionError};
 use crate::model::{Function, ResultValue};
+use crate::number_helpers;
 use crate::parsing::{parse_str, ParserError, ParsingContext};
 use crate::types::NumberTypeId;
 
 pub struct Calculator {
-    execution: ExecutionEngine
+    execution: ExecutionEngine,
+    output_base: u32
 }
 
 impl Calculator {
     pub fn new() -> Calculator {
         Calculator {
-            execution: ExecutionEngine::new(NumberTypeId::Float)
+            execution: ExecutionEngine::new(NumberTypeId::Float),
+            output_base: 10
         }
     }
 
@@ -98,13 +102,28 @@ impl Calculator {
 
                 Ok(result)
             }
+            Command::DisplayBase(base) => {
+                if base >= 2 && base <= 36 {
+                    self.output_base = base;
+                    Ok(String::new())
+                } else {
+                    Err(CalculationError::InvalidOutputBase)
+                }
+            }
         }
     }
 
     fn value_to_string(&self, value: &ResultValue) -> String {
         match value {
             ResultValue::Empty => String::new(),
-            ResultValue::Int(value) => value.to_string(),
+            ResultValue::Int(value) => {
+                match self.output_base {
+                    10 => value.to_string(),
+                    2 => number_helpers::to_base(*value, self.output_base, "0b"),
+                    16 => number_helpers::to_base(*value, self.output_base, "0x"),
+                    _ => number_helpers::to_base(*value, self.output_base, "")
+                }
+            },
             ResultValue::Float(value) => value.to_string()
         }
     }
@@ -115,14 +134,16 @@ pub type CalculationResult<T> = Result<T, CalculationError>;
 #[derive(Debug, PartialEq)]
 pub enum CalculationError {
     Parser(ParserError),
-    Execution(ExecutionError)
+    Execution(ExecutionError),
+    InvalidOutputBase
 }
 
 impl Display for CalculationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             CalculationError::Parser(error) => write!(f, "{}", error.error),
-            CalculationError::Execution(error) => write!(f, "{}", error)
+            CalculationError::Execution(error) => write!(f, "{}", error),
+            CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36.")
         }
     }
 }
@@ -143,6 +164,7 @@ enum Command {
     Mode(NumberTypeId),
     ShowVariables,
     ShowFunctions,
+    DisplayBase(u32)
 }
 
 impl Command {
@@ -161,6 +183,10 @@ impl Command {
                 }
                 "funcs" => {
                     return Some(Command::ShowFunctions);
+                },
+                "display" => {
+                    let base = u32::from_str(parts.next()?).ok()?;
+                    return Some(Command::DisplayBase(base));
                 }
                 _ => {}
             }
@@ -188,6 +214,16 @@ fn test_set_mode() {
     let mut calculator = Calculator::new();
     assert_eq!(Ok("".to_string()), calculator.execute(":mode int"));
     assert_eq!(NumberTypeId::Int, calculator.execution.number_type_id());
+}
+
+#[test]
+fn test_display_base() {
+    let mut calculator = Calculator::new();
+    calculator.execution.set_number_type(NumberTypeId::Int);
+    calculator.output_base = 16;
+    assert_eq!(Ok("0xff".to_string()), calculator.execute("255"));
+    calculator.output_base = 2;
+    assert_eq!(Ok("0b101".to_string()), calculator.execute("5"));
 }
 
 #[test]
