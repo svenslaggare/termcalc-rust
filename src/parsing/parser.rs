@@ -122,14 +122,6 @@ impl<'a> Parser<'a> {
             }
 
             match op {
-                Token::Operator(Operator::Single('.')) => {
-                    match (lhs.tree, rhs.tree) {
-                        (ParserExpressionTreeData::Variable(left), ParserExpressionTreeData::Variable(right)) => {
-                            lhs = ParserExpressionTree::new(op_location, ParserExpressionTreeData::Variable(format!("{}.{}", left, right)));
-                        }
-                        _ => { return Err(ParserError::new(op_location, ParserErrorType::ExpectedColumnAccess)); }
-                    }
-                }
                 Token::Operator(Operator::Single('=')) => {
                     lhs = ParserExpressionTree::new(
                         op_location,
@@ -287,12 +279,6 @@ impl<'a> Parser<'a> {
 
     fn expect_and_consume_token(&mut self, token: Token, error: ParserErrorType) -> ParserResult<()> {
         self.expect_token(token, error)?;
-        self.next()?;
-        Ok(())
-    }
-
-    fn expect_and_consume_operator(&mut self, operator: Operator) -> ParserResult<()> {
-        self.expect_token(Token::Operator(operator), ParserErrorType::ExpectedSpecificOperator(operator))?;
         self.next()?;
         Ok(())
     }

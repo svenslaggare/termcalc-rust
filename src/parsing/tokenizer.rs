@@ -125,39 +125,15 @@ pub enum ParserErrorType {
     Unknown,
     ReachedEndOfTokens,
     TooManyTokens,
-    IntConvertError,
-    FloatConvertError,
     AlreadyHasDot,
     ExpectedLeftParentheses,
     ExpectedRightParentheses,
     ExpectedExpression,
     ExpectedArgumentListContinuation,
-    ExpectedProjectionContinuation,
-    ExpectedColumnDefinitionStart,
-    ExpectedColumnDefinitionContinuation,
-    ExpectedJsonColumnPartStart,
     ExpectedIdentifier,
-    ExpectedString,
-    ExpectedInt,
     ExpectedOperator,
-    ExpectedSpecificOperator(Operator),
-    ExpectedTuple,
-    ExpectedColon,
-    ExpectedDoubleColon,
-    ExpectedRightArrow,
-    ExpectedSemiColon,
-    ExpectedNull,
-    ExpectedColumnAccess,
     NotDefinedBinaryOperator(Operator),
-    NotDefinedUnaryOperator(Operator),
-    NotDefinedType(String),
-    TrimOnlyForString,
-    ExpectedValueForDefaultValue,
-    AlreadyHaveWhere,
-    AlreadyHaveJoin,
-    AlreadyHaveGroupBy,
-    AlreadyHaveHaving,
-    AlreadyHaveLimit
+    NotDefinedUnaryOperator(Operator)
 }
 
 impl std::fmt::Display for ParserErrorType {
@@ -166,39 +142,15 @@ impl std::fmt::Display for ParserErrorType {
             ParserErrorType::Unknown => { write!(f, "Unknown error") }
             ParserErrorType::ReachedEndOfTokens => { write!(f, "Reached end of tokens") }
             ParserErrorType::TooManyTokens => { write!(f, "Too many tokens") }
-            ParserErrorType::IntConvertError => { write!(f, "Failed to parse integer") }
-            ParserErrorType::FloatConvertError => { write!(f, "Failed to parse float") }
             ParserErrorType::AlreadyHasDot => { write!(f, "The number already has a dot") }
             ParserErrorType::ExpectedLeftParentheses => { write!(f, "Expected '('") }
             ParserErrorType::ExpectedRightParentheses => { write!(f, "Expected ')'") }
             ParserErrorType::ExpectedExpression => { write!(f, "Expected an expression") }
             ParserErrorType::ExpectedArgumentListContinuation => { write!(f, "Expected ',' or ')'") }
-            ParserErrorType::ExpectedProjectionContinuation => { write!(f, "Expected ','") }
-            ParserErrorType::ExpectedColumnDefinitionStart => { write!(f, "Expected start of column definition")  }
-            ParserErrorType::ExpectedJsonColumnPartStart => { write!(f, "Expected '.', '[' or '}}'")  }
-            ParserErrorType::ExpectedColumnDefinitionContinuation => { write!(f, "Expected ',' or ')'")  }
             ParserErrorType::ExpectedIdentifier => { write!(f, "Expected an identifier") }
-            ParserErrorType::ExpectedString => { write!(f, "Expected a string") }
-            ParserErrorType::ExpectedInt => { write!(f, "Expected an integer") }
             ParserErrorType::ExpectedOperator => { write!(f, "Expected an operator") }
-            ParserErrorType::ExpectedSpecificOperator(operator) => { write!(f, "Expected '{}' operator", operator) }
-            ParserErrorType::ExpectedTuple => { write!(f, "Expected tuple expression") }
-            ParserErrorType::ExpectedColon => { write!(f, "Expected ':'") }
-            ParserErrorType::ExpectedDoubleColon => { write!(f, "Expected '::'") }
-            ParserErrorType::ExpectedRightArrow => { write!(f, "Expected '=>'") }
-            ParserErrorType::ExpectedSemiColon => { write!(f, "Expected ';'") }
-            ParserErrorType::ExpectedNull => { write!(f, "Expected NULL") }
-            ParserErrorType::ExpectedColumnAccess => { write!(f, "Expected column access") }
             ParserErrorType::NotDefinedBinaryOperator(operator) => { write!(f, "'{}' is not a valid binary operator", operator) }
             ParserErrorType::NotDefinedUnaryOperator(operator) => { write!(f, "'{}' is not a valid unary operator", operator) }
-            ParserErrorType::NotDefinedType(value_type) => { write!(f, "'{}' is not a valid type", value_type) }
-            ParserErrorType::TrimOnlyForString => { write!(f, "The 'TRIM' modifier is only available for 'TEXT' columns") }
-            ParserErrorType::ExpectedValueForDefaultValue => { write!(f, "Expected a value expression for the default value") }
-            ParserErrorType::AlreadyHaveWhere => { write!(f, "This statement already have a 'WHERE' clause") }
-            ParserErrorType::AlreadyHaveJoin => { write!(f, "This statement already have a 'JOIN' clause") }
-            ParserErrorType::AlreadyHaveGroupBy => { write!(f, "This statement already have a 'GROUP BY' clause") }
-            ParserErrorType::AlreadyHaveHaving => { write!(f, "This statement already have a 'HAVING' clause") }
-            ParserErrorType::AlreadyHaveLimit => { write!(f, "This statement already have a 'LIMIT' clause") }
         }
     }
 }
