@@ -62,8 +62,8 @@ impl FloatType {
                     (
                         "logb".to_owned(),
                         Function::Builtin {
-                            parameters: vec!["x".to_owned()],
-                            description: "Computes the y-logarithm of x..".to_owned(),
+                            parameters: vec!["x".to_owned(), "y".to_owned()],
+                            description: "Computes the y-logarithm of x.".to_owned(),
                             callback: create_two_argument_function(|x, y| x.log(y)),
                         }
                     ),

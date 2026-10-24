@@ -318,7 +318,7 @@ fn test_display_funcs() {
     let mut calculator = Calculator::new();
     assert_eq!(Ok("".to_string()), calculator.execute("f(x) = x^2"));
     assert_eq!(
-        Ok("Built-in:\n    sqrt(x): Computes the square root of x.\n    ln(x): Computes the natural logarithm of x.\n    logb(x): Computes the y-logarithm of x..\n    acos(x): Computes the inverse cosine of x\n    atan(x): Computes the inverse tangent of x\n    ceil(x): Ceils x.\n    floor(x): Floors x.\n    sin(x): Computes the sine of x\n    tan(x): Computes the tangent of x\n    cos(x): Computes the cosine of x\n    asin(x): Computes the inverse sine of x\n    round(x): Rounds x.\n    log10(x): Computes the 10-logarithm of x.\n\nUser-defined:\n    f(x) = (x ^ 2)\n".to_string()),
+        Ok("Built-in:\n    sqrt(x): Computes the square root of x.\n    ln(x): Computes the natural logarithm of x.\n    logb(x, y): Computes the y-logarithm of x.\n    acos(x): Computes the inverse cosine of x\n    atan(x): Computes the inverse tangent of x\n    ceil(x): Ceils x.\n    floor(x): Floors x.\n    sin(x): Computes the sine of x\n    tan(x): Computes the tangent of x\n    cos(x): Computes the cosine of x\n    asin(x): Computes the inverse sine of x\n    round(x): Rounds x.\n    log10(x): Computes the 10-logarithm of x.\n\nUser-defined:\n    f(x) = (x ^ 2)\n".to_string()),
         calculator.execute(":funcs")
     );
 }
