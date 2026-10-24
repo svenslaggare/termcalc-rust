@@ -1,6 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::fmt::Write;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 use crate::execution::engine::{ExecutionEngine, ExecutionError};
 use crate::model::{Function, ResultValue};
@@ -16,10 +18,16 @@ pub struct Calculator {
 
 impl Calculator {
     pub fn new() -> Calculator {
-        Calculator {
+        let mut calculator = Calculator {
             execution: ExecutionEngine::new(NumberTypeId::Float),
             output_base: 10
+        };
+
+        if let Err(err) = calculator.read_default_file() {
+            println!("Error when reading default file: {}", err);
         }
+
+        calculator
     }
 
     pub fn execute(&mut self, text: &str) -> CalculationResult<String> {
@@ -42,6 +50,22 @@ impl Calculator {
         let tree = parse_str(ParsingContext::from_number_type(self.execution.number_type()), text)?;
         let result = self.execution.execute(&tree)?;
         Ok(result)
+    }
+
+    fn read_default_file(&mut self) -> CalculationResult<()> {
+        if let Some(home_dir) = std::env::home_dir() {
+            let default_file = home_dir.join("default.termcalc");
+            if default_file.is_file() {
+                let file = File::open(default_file).map_err(|err| CalculationError::Other(err.to_string()))?;
+                for line in BufReader::new(file).lines() {
+                    if let Ok(line) = line {
+                        self.execute(&line)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     fn handle_command(&mut self, command: Command) -> CalculationResult<String> {
@@ -175,6 +199,7 @@ pub enum CalculationError {
     Execution(ExecutionError),
     InvalidOutputBase,
     GnuPlotNotFound,
+    Other(String),
     InternalError
 }
 
@@ -186,6 +211,7 @@ impl Display for CalculationError {
             CalculationError::Execution(error) => write!(f, "{}", error),
             CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36"),
             CalculationError::GnuPlotNotFound => write!(f, "Please install 'gnuplot' to enable plotting"),
+            CalculationError::Other(err) => write!(f, "{}", err),
             CalculationError::InternalError => write!(f, "Internal error")
         }
     }
