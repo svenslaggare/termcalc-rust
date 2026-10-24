@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use fnv::FnvHashMap;
 
@@ -60,12 +61,22 @@ impl ResultValue {
     }
 }
 
+impl Display for ResultValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ResultValue::Empty => write!(f, ""),
+            ResultValue::Int(value) => write!(f, "{}", value),
+            ResultValue::Float(value) => write!(f, "{}", value),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum Function {
     Builtin {
         parameters: Vec<String>,
         description: String,
-        callback: Rc<dyn Fn(&Vec<ResultValue>) -> Option<ResultValue>>
+        callback: Rc<dyn Fn(&[ResultValue]) -> Option<ResultValue>>
     },
     User {
         parameters: Vec<String>,

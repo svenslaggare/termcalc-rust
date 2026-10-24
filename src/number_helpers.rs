@@ -15,3 +15,38 @@ pub fn to_base(mut value: i64, base: u32, prefix: &str) -> String {
 
     format!("{}{}{}", if is_negative {"-"} else {""}, prefix, String::from_iter(result.into_iter()))
 }
+
+pub fn float_range(start: f64, end: f64, step: f64) -> impl Iterator<Item=f64> {
+    FloatRange {
+        end,
+        step,
+        current: start,
+        reached_end: false,
+    }
+}
+
+struct FloatRange {
+    end: f64,
+    step: f64,
+    current: f64,
+    reached_end: bool
+}
+
+impl Iterator for FloatRange {
+    type Item = f64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.reached_end {
+            return None;
+        }
+
+        if self.current > self.end {
+            self.reached_end = true;
+            return Some(self.end);
+        }
+
+        let current = self.current;
+        self.current += self.step;
+        Some(current)
+    }
+}

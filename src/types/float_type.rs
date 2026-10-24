@@ -145,7 +145,7 @@ impl FloatType {
     }
 }
 
-fn create_single_argument_function(callback: fn(f64) -> f64) -> Rc<dyn Fn(&Vec<ResultValue>) -> Option<ResultValue>> {
+fn create_single_argument_function(callback: fn(f64) -> f64) -> Rc<dyn Fn(&[ResultValue]) -> Option<ResultValue>> {
     Rc::new(move |arguments| {
         match arguments[0].as_f64() {
             Some(x) => {
@@ -156,7 +156,7 @@ fn create_single_argument_function(callback: fn(f64) -> f64) -> Rc<dyn Fn(&Vec<R
     })
 }
 
-fn create_two_argument_function(callback: fn(f64, f64) -> f64) -> Rc<dyn Fn(&Vec<ResultValue>) -> Option<ResultValue>> {
+fn create_two_argument_function(callback: fn(f64, f64) -> f64) -> Rc<dyn Fn(&[ResultValue]) -> Option<ResultValue>> {
     Rc::new(move |arguments| {
         match (arguments[0].as_f64(), arguments[1].as_f64()) {
             (Some(x), Some(y)) => {
@@ -184,7 +184,7 @@ impl NumberType for FloatType {
         if constant.base() != 10 {
             return Err(NumberTypeError::NonDecimalBase);
         }
-        
+
         let mut value = String::new();
         for (index, current) in constant.iter().enumerate() {
             match current {

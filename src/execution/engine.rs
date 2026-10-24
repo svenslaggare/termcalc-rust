@@ -77,6 +77,40 @@ impl ExecutionEngine {
         Ok(result)
     }
 
+    pub fn execute_function<const N: usize>(
+        &self,
+        function: &Function,
+        invocations_arguments: impl Iterator<Item=[ResultValue; N]>
+    ) -> Result<Vec<([ResultValue; N], ResultValue)>, ExecutionError> {
+        match function {
+            Function::Builtin { callback, .. } => {
+                let mut results = Vec::new();
+
+                for arguments in invocations_arguments {
+                    let result = callback(&arguments).ok_or_else(|| ExecutionError::InvalidOperation)?;
+                    results.push((arguments, result));
+                }
+
+                Ok(results)
+            }
+            Function::User { parameters, body } => {
+                let mut results = Vec::new();
+
+                let mut child_context = ExecutionContext::new(self.environment().clone());
+
+                for arguments in invocations_arguments {
+                    for (parameter, argument) in parameters.iter().zip(arguments.iter()) {
+                        child_context.environment.define_variable(parameter, argument.clone());
+                    }
+
+                    results.push((arguments, self.execute_internal(&mut child_context, &body)?));
+                }
+
+                Ok(results)
+            }
+        }
+    }
+
     fn execute_internal(&self, context: &mut ExecutionContext, tree: &ParserExpressionTree) -> Result<ResultValue, ExecutionError> {
         match &tree.tree {
             ParserExpressionTreeData::Number(value) => {
@@ -236,6 +270,7 @@ impl Display for ExecutionError {
     }
 }
 
+#[derive(Clone)]
 pub struct Environment {
     scopes: HashMap<NumberTypeId, EnvironmentScope>,
     active: NumberTypeId

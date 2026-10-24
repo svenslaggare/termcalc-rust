@@ -1,10 +1,13 @@
 use std::fmt::{Display, Formatter};
-use std::fmt::Write;
 use std::str::FromStr;
+use std::fmt::Write;
+
+use tempfile::{NamedTempFile};
 
 use crate::execution::engine::{ExecutionEngine, ExecutionError};
 use crate::model::{Function, ResultValue};
 use crate::number_helpers;
+use crate::number_helpers::float_range;
 use crate::parsing::{parse_str, ParserError, ParsingContext};
 use crate::types::NumberTypeId;
 
@@ -22,13 +25,24 @@ impl Calculator {
     }
 
     pub fn execute(&mut self, text: &str) -> CalculationResult<String> {
-        if let Some(command) = Command::from_str(text) {
-            return self.handle_command(command);
+        match Command::from_str(text) {
+            Ok(command) => {
+                return self.handle_command(command);
+            }
+            Err(CommandError::NoCommand) => {}
+            Err(err) => {
+                return Ok(err.to_string())
+            }
         }
 
+        let result = self.execute_text(text)?;
+        Ok(self.value_to_string(&result))
+    }
+
+    fn execute_text(&mut self, text: &str) -> CalculationResult<ResultValue> {
         let tree = parse_str(ParsingContext::from_number_type(self.execution.number_type()), text)?;
         let result = self.execution.execute(&tree)?;
-        Ok(self.value_to_string(&result))
+        Ok(result)
     }
 
     fn handle_command(&mut self, command: Command) -> CalculationResult<String> {
@@ -110,6 +124,15 @@ impl Calculator {
                     Err(CalculationError::InvalidOutputBase)
                 }
             }
+            Command::Plot { function, start, end } => {
+                let start = self.execute_text(&start)?;
+                let end = self.execute_text(&end)?;
+                GnuPlotter {
+                    function: &function,
+                    start,
+                    end
+                }.plot(&self.execution)
+            }
         }
     }
 
@@ -135,7 +158,11 @@ pub type CalculationResult<T> = Result<T, CalculationError>;
 pub enum CalculationError {
     Parser(ParserError),
     Execution(ExecutionError),
-    InvalidOutputBase
+    InvalidOutputBase,
+    FunctionToNotFound(String),
+    GnuPlotNotFound,
+    InvalidNumberType,
+    InternalError
 }
 
 impl Display for CalculationError {
@@ -143,7 +170,11 @@ impl Display for CalculationError {
         match self {
             CalculationError::Parser(error) => write!(f, "{}", error.error),
             CalculationError::Execution(error) => write!(f, "{}", error),
-            CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36.")
+            CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36."),
+            CalculationError::FunctionToNotFound(name) => write!(f, "The function '{}' not found", name),
+            CalculationError::GnuPlotNotFound => write!(f, "Please install 'gnuplot' to enable plotting"),
+            CalculationError::InvalidNumberType => write!(f, "Incorrect number type"),
+            CalculationError::InternalError => write!(f, "Internal error")
         }
     }
 }
@@ -160,39 +191,122 @@ impl From<ExecutionError> for CalculationError {
     }
 }
 
+struct GnuPlotter<'a> {
+    function: &'a str,
+    start: ResultValue,
+    end: ResultValue
+}
+
+impl<'a> GnuPlotter<'a> {
+    pub fn plot(&self, execution: &ExecutionEngine) -> CalculationResult<String> {
+        let function = execution.environment().get_function(&self.function)
+            .ok_or_else(|| CalculationError::FunctionToNotFound(self.function.to_owned()))?;
+
+        let mut plot_data_file = NamedTempFile::with_suffix(".csv").map_err(|_| CalculationError::InternalError)?;
+
+        match (&self.start, &self.end) {
+            (ResultValue::Float(start), ResultValue::Float(end)) => {
+                for (x, y) in execution.execute_function(function, float_range(*start, *end, 0.01).map(|x| [ResultValue::Float(x)]))? {
+                    plot_data_file.write_all(format!("{};{}\n", x[0], y).as_bytes()).map_err(|_| CalculationError::InternalError)?;
+                }
+            }
+            (ResultValue::Int(start), ResultValue::Int(end)) => {
+                for (x, y) in execution.execute_function(function, (*start..*end + 1).map(|x| [ResultValue::Int(x)]))? {
+                    plot_data_file.write_all(format!("{};{}\n", x[0], y).as_bytes()).map_err(|_| CalculationError::InternalError)?;
+                }
+            }
+            _ => {
+                return Err(CalculationError::InvalidNumberType);
+            }
+        }
+
+        let plot_definition = r#"
+        set datafile separator ";"
+        set xlabel "X"
+        set ylabel "Y"
+        set terminal wxt size 800,600
+        plot ""#.to_owned() + &plot_data_file.path().display().to_string() + r#"" using 1:2 with linespoints title "Plot"
+        "#;
+
+        use std::io::Write;
+
+        let mut plot_file = NamedTempFile::new().map_err(|_| CalculationError::InternalError)?;
+        plot_file.write_all(plot_definition.as_bytes()).map_err(|_| CalculationError::InternalError)?;
+
+        let mut command = std::process::Command::new("gnuplot")
+            .arg(plot_file.path())
+            .arg("-p")
+            .spawn()
+            .map_err(|_| CalculationError::GnuPlotNotFound)?;
+        command.wait().map_err(|_| CalculationError::InternalError)?;
+
+        Ok(String::new())
+    }
+}
+
 enum Command {
     Mode(NumberTypeId),
     ShowVariables,
     ShowFunctions,
-    DisplayBase(u32)
+    DisplayBase(u32),
+    Plot { function: String, start: String, end: String }
+}
+
+enum CommandError {
+    NoCommand,
+    ExpectedArgument,
+    ExpectedInt,
+    InvalidNumberType
+}
+
+impl Display for CommandError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CommandError::NoCommand => write!(f, ""),
+            CommandError::ExpectedArgument => write!(f, "Expected an argument"),
+            CommandError::ExpectedInt => write!(f, "Expected an integer"),
+            CommandError::InvalidNumberType => write!(f, "Invalid number type")
+        }
+    }
 }
 
 impl Command {
-    pub fn from_str(text: &str) -> Option<Command> {
+    pub fn from_str(text: &str) -> Result<Command, CommandError> {
         if text.chars().next() == Some(':') {
             let (_, text) = text.split_at(1);
             let mut parts = text.split_whitespace();
-            let command = parts.next()?;
+
+            let mut next_part = || {
+                parts.next().ok_or_else(|| CommandError::ExpectedArgument)
+            };
+
+            let command = next_part()?;
             match command {
                 "mode" => {
-                    let number_type = NumberTypeId::from_str(parts.next()?)?;
-                    return Some(Command::Mode(number_type));
+                    let number_type = NumberTypeId::from_str(next_part()?).ok_or_else(|| CommandError::InvalidNumberType)?;
+                    return Ok(Command::Mode(number_type));
                 }
                 "vars" => {
-                    return Some(Command::ShowVariables);
+                    return Ok(Command::ShowVariables);
                 }
                 "funcs" => {
-                    return Some(Command::ShowFunctions);
+                    return Ok(Command::ShowFunctions);
                 },
                 "display" => {
-                    let base = u32::from_str(parts.next()?).ok()?;
-                    return Some(Command::DisplayBase(base));
+                    let base = u32::from_str(next_part()?).map_err(|_| CommandError::ExpectedInt)?;
+                    return Ok(Command::DisplayBase(base));
+                }
+                "plot" => {
+                    let function = next_part()?.to_owned();
+                    let start = next_part()?.to_owned();
+                    let end = next_part()?.to_owned();
+                    return Ok(Command::Plot { function, start, end })
                 }
                 _ => {}
             }
         }
 
-        None
+        Err(CommandError::NoCommand)
     }
 }
 
