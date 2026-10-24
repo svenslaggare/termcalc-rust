@@ -186,17 +186,28 @@ impl NumberType for FloatType {
         }
 
         let mut value = String::new();
+        let mut inside_exponent = true;
         for (index, current) in constant.iter().enumerate() {
             match current {
                 NumericConstantChar::Zero | NumericConstantChar::One | NumericConstantChar::Two | NumericConstantChar::Three | NumericConstantChar::Four
                 | NumericConstantChar::Five | NumericConstantChar::Six | NumericConstantChar::Seven | NumericConstantChar::Eight | NumericConstantChar::Nine
-                | NumericConstantChar::DecimalPoint | NumericConstantChar::Exponent
-                => {
+                | NumericConstantChar::DecimalPoint  => {
                     write!(value, "{}", current).map_err(|_| NumberTypeError::ConstructionError)?;
                 }
+                NumericConstantChar::Exponent => {
+                    write!(value, "{}", current).map_err(|_| NumberTypeError::ConstructionError)?;
+                    inside_exponent = true;
+                }
                 | NumericConstantChar::A | NumericConstantChar::B | NumericConstantChar::C | NumericConstantChar::D | NumericConstantChar::E | NumericConstantChar::F => {}
-                NumericConstantChar::MinusSign | NumericConstantChar::PlusSign => {
+                NumericConstantChar::PlusSign => {
                     if index > 0 {
+                        break;
+                    } else {
+                        write!(value, "{}", current).map_err(|_| NumberTypeError::ConstructionError)?;
+                    }
+                }
+                NumericConstantChar::MinusSign => {
+                    if index > 0 && !inside_exponent {
                         break;
                     } else {
                         write!(value, "{}", current).map_err(|_| NumberTypeError::ConstructionError)?;
@@ -233,6 +244,40 @@ fn test_to_value2() {
                 NumericConstantChar::Seven,
                 NumericConstantChar::Exponent,
                 NumericConstantChar::Six
+            ],
+            10
+        ))
+    );
+}
+
+#[test]
+fn test_to_value3() {
+    assert_eq!(
+        Ok(ResultValue::Float(1.0E-3)),
+        FloatType::new().to_value(&NumericConstant::new(
+            vec![
+                NumericConstantChar::One,
+                NumericConstantChar::DecimalPoint,
+                NumericConstantChar::Zero,
+                NumericConstantChar::Exponent,
+                NumericConstantChar::MinusSign,
+                NumericConstantChar::Three
+            ],
+            10
+        ))
+    );
+}
+
+#[test]
+fn test_to_value4() {
+    assert_eq!(
+        Ok(ResultValue::Float(1.0E-3)),
+        FloatType::new().to_value(&NumericConstant::new(
+            vec![
+                NumericConstantChar::One,
+                NumericConstantChar::Exponent,
+                NumericConstantChar::MinusSign,
+                NumericConstantChar::Three
             ],
             10
         ))

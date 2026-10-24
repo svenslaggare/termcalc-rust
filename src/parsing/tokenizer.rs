@@ -305,6 +305,8 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
             };
 
             let mut has_dot = false;
+            let mut inside_exponent = true;
+            let mut has_minus_sign = false;
 
             loop {
                 match state.peek_char() {
@@ -319,6 +321,11 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
                     }
                     Some('E') if has_dot => {
                         chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
+                        inside_exponent = true;
+                    }
+                    Some('-') if inside_exponent && !has_minus_sign => {
+                        chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
+                        has_minus_sign = true;
                     }
                     Some(next) if next == &'.' => {
                         if has_dot {
@@ -480,6 +487,28 @@ fn test_tokenize7() {
 
 #[test]
 fn test_tokenize8() {
+    let tokens = tokenize_simple("1.0E-3");
+    assert_eq!(
+        vec![
+            Token::Number(NumericConstant::new(
+                vec![
+                    NumericConstantChar::One,
+                    NumericConstantChar::DecimalPoint,
+                    NumericConstantChar::Zero,
+                    NumericConstantChar::Exponent,
+                    NumericConstantChar::MinusSign,
+                    NumericConstantChar::Three
+                ],
+                10
+            )),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize10() {
     let tokens = tokenize_simple("0xFF");
     assert_eq!(
         vec![
@@ -491,7 +520,7 @@ fn test_tokenize8() {
 }
 
 #[test]
-fn test_tokenize9() {
+fn test_tokenize11() {
     let tokens = tokenize_simple("0b101");
     assert_eq!(
         vec![
