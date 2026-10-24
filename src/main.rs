@@ -1,13 +1,13 @@
-use rustyline::{DefaultEditor};
+use rustyline::DefaultEditor;
 use crate::calculator::{CalculationError, Calculator};
 
 mod parsing;
 mod execution;
 mod types;
-mod model;
 mod calculator;
 mod number_helpers;
 mod plot;
+mod model;
 
 fn main() {
     let mut calculator = Calculator::new();

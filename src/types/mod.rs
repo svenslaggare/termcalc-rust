@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
-
-use crate::model::{EnvironmentScope, ResultValue};
+use crate::execution::environment::EnvironmentScope;
+use crate::model::{ResultValue};
 use crate::parsing::{BinaryOperators, NumericConstant, UnaryOperators};
 
 pub trait NumberType {

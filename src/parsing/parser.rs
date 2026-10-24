@@ -1,7 +1,7 @@
 use crate::model::ExpressionTree;
 use crate::parsing::Operator;
 use crate::parsing::tokenizer::{ParserErrorType, Token, ParserToken, tokenize, ParserError, TokenLocation};
-use crate::parsing::operator::{BinaryOperators, UnaryOperators};
+use crate::model::operator::{BinaryOperators, UnaryOperators};
 use crate::types::NumberType;
 
 pub struct ParsingContext<'a> {
@@ -22,8 +22,6 @@ pub fn parse_str(context: ParsingContext, text: &str) -> ParserResult<Expression
     let tokens = tokenize(text)?;
     Parser::new(context.binary_operators, context.unary_operators, tokens).parse()
 }
-
-
 
 pub type ParserResult<T> = Result<T, ParserError>;
 

@@ -2,7 +2,8 @@ use std::fmt::Write;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use crate::model::{EnvironmentScope, Function, ResultValue};
+use crate::execution::environment::EnvironmentScope;
+use crate::model::{Function, ResultValue};
 use crate::parsing::{BinaryOperator, BinaryOperators, NumericConstant, NumericConstantChar, Operator, UnaryOperator, UnaryOperators};
 use crate::types::{NumberType, NumberTypeError};
 

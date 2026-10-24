@@ -1,6 +1,7 @@
 use std::fmt::Write;
 
-use crate::model::{EnvironmentScope, ResultValue};
+use crate::execution::environment::EnvironmentScope;
+use crate::model::{ResultValue};
 use crate::parsing::{BinaryOperator, BinaryOperators, NumericConstant, NumericConstantChar, Operator, UnaryOperator, UnaryOperators};
 use crate::types::{NumberType, NumberTypeError};
 

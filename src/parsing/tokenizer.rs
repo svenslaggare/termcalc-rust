@@ -5,7 +5,7 @@ use std::fmt::Formatter;
 
 use lazy_static::lazy_static;
 use crate::parsing::{NumericConstant, NumericConstantChar};
-use crate::parsing::operator::Operator;
+use crate::model::operator::Operator;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {

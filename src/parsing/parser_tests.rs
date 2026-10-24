@@ -1,6 +1,6 @@
 use crate::model::ExpressionTree;
-use crate::parsing::numeric_constant::NumericConstant;
-use crate::parsing::operator::{BinaryOperators, Operator, UnaryOperators};
+use crate::model::numeric_constant::NumericConstant;
+use crate::model::operator::{BinaryOperators, Operator, UnaryOperators};
 use crate::parsing::{parse_str, BinaryOperator, UnaryOperator};
 use crate::parsing::parser::{Parser, ParsingContext};
 use crate::parsing::tokenizer::{ParserErrorType, Token};

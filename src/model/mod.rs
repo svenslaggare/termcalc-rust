@@ -1,8 +1,11 @@
 use std::fmt::{Display, Formatter};
-use std::rc::Rc;
-use fnv::FnvHashMap;
 
+pub use crate::model::function::Function;
 use crate::parsing::{NumericConstant, Operator};
+
+pub mod operator;
+pub mod numeric_constant;
+pub mod function;
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 pub enum ResultValue {
@@ -79,73 +82,4 @@ pub enum ExpressionTree {
     UnaryOperator { operator: Operator, operand: Box<ExpressionTree> },
     Declaration { left: Box<ExpressionTree>, right: Box<ExpressionTree> },
     Call { name: String, arguments: Vec<ExpressionTree> }
-}
-
-#[derive(Clone)]
-pub enum Function {
-    Builtin {
-        parameters: Vec<String>,
-        description: String,
-        callback: Rc<dyn Fn(&[ResultValue]) -> Option<ResultValue>>
-    },
-    User {
-        parameters: Vec<String>,
-        body: ExpressionTree
-    }
-}
-
-impl Function {
-    pub fn parameters(&self) -> &Vec<String> {
-        match self {
-            Function::Builtin { parameters, .. } => parameters,
-            Function::User { parameters, .. } => parameters
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct EnvironmentScope {
-    variables: FnvHashMap<String, ResultValue>,
-    functions: FnvHashMap<String, Function>
-}
-
-impl EnvironmentScope {
-    pub fn new(variables: Vec<(String, ResultValue)>, functions: Vec<(String, Function)>) -> EnvironmentScope {
-        EnvironmentScope {
-            variables: FnvHashMap::from_iter(variables),
-            functions: FnvHashMap::from_iter(functions)
-        }
-    }
-
-    pub fn get_variable(&self, name: &str) -> Option<ResultValue> {
-        self.variables.get(name).cloned()
-    }
-
-    pub fn variables(&self) -> impl Iterator<Item=(&String, &ResultValue)> {
-        self.variables.iter()
-    }
-
-    pub fn define_variable(&mut self, name: &str, value: ResultValue) {
-        self.variables.insert(name.to_owned(), value);
-    }
-
-    pub fn define_variables(&mut self, iterator: impl Iterator<Item=(String, ResultValue)>) {
-        self.variables.extend(iterator);
-    }
-
-    pub fn get_function(&self, name: &str) -> Option<&Function> {
-        self.functions.get(name)
-    }
-
-    pub fn functions(&self) -> impl Iterator<Item=(&String, &Function)> {
-        self.functions.iter()
-    }
-
-    pub fn define_function(&mut self, name: &str, function: Function) {
-        self.functions.insert(name.to_owned(), function);
-    }
-
-    pub fn define_functions(&mut self, iterator: impl Iterator<Item=(String, Function)>) {
-        self.functions.extend(iterator);
-    }
 }

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use crate::model::{EnvironmentScope, Function, ExpressionTree, ResultValue};
+use crate::execution::environment::{Environment};
+use crate::model::{Function, ExpressionTree, ResultValue};
 use crate::parsing::{Operator};
 use crate::types::{NumberTypeId, NumberType, NumberTypeError};
 use crate::types::float_type::FloatType;
@@ -37,15 +38,15 @@ impl ExecutionEngine {
     }
     
     pub fn number_type(&self) -> &dyn NumberType {
-        self.number_types[&self.top_level_context.environment.active].as_ref()
+        self.number_types[&self.top_level_context.environment.active()].as_ref()
     }
 
     pub fn number_type_id(&self) -> NumberTypeId {
-        self.top_level_context.environment.active
+        self.top_level_context.environment.active()
     }
 
     pub fn set_number_type(&mut self, id: NumberTypeId) {
-        self.top_level_context.environment.active = id;
+        self.top_level_context.environment.set_active(id);
     }
 
     pub fn environment(&self) -> &Environment {
@@ -223,7 +224,7 @@ impl<'a> ExecutionContext<'a> {
     pub fn child(&'a self) -> ExecutionContext<'a> {
         ExecutionContext {
             parent: Some(self),
-            environment: Environment::empty(self.environment.scopes.keys().cloned(), self.environment.active.clone()),
+            environment: Environment::empty(self.environment.scopes(), self.environment.active()),
 
             defined_variables: HashMap::new(),
             defined_functions: HashMap::new()
@@ -268,81 +269,6 @@ impl Display for ExecutionError {
             ExecutionError::ExpectedVariable => write!(f, "Expected a variable"),
             ExecutionError::InvalidCallArguments { expected, actual } => write!(f, "Expected {} arguments but got {}", expected, actual),
             ExecutionError::MixedTypes => write!(f, "Mixed int and float types")
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Environment {
-    scopes: HashMap<NumberTypeId, EnvironmentScope>,
-    active: NumberTypeId
-}
-
-impl Environment {
-    pub fn new(
-        scopes: impl Iterator<Item=(NumberTypeId, EnvironmentScope)>,
-        active: NumberTypeId
-    ) -> Environment {
-        Environment {
-            scopes: HashMap::from_iter(scopes),
-            active
-        }
-    }
-
-    pub fn empty(number_types: impl Iterator<Item=NumberTypeId>, active: NumberTypeId) -> Environment {
-        Environment {
-            scopes: HashMap::from_iter(number_types.map(|number_type| (number_type, EnvironmentScope::new(Vec::new(), Vec::new())))),
-            active
-        }
-    }
-
-    pub fn scope(&self) -> &EnvironmentScope {
-        &self.scopes[&self.active]
-    }
-
-    pub fn scope_mut(&mut self) -> &mut EnvironmentScope {
-        self.scopes.get_mut(&self.active).unwrap()
-    }
-
-    pub fn get_variable(&self, name: &str) -> Option<ResultValue> {
-        self.scope().get_variable(name)
-    }
-
-    pub fn variables(&self) -> impl Iterator<Item=(&String, &ResultValue)> {
-        self.scope().variables()
-    }
-
-    pub fn define_variable(&mut self, name: &str, value: ResultValue) {
-        for scope in self.scopes.values_mut() {
-            scope.define_variable(name, value.clone());
-        }
-    }
-
-    pub fn define_variables(&mut self, iterator: impl Iterator<Item=(String, ResultValue)>) {
-        let variables = iterator.collect::<Vec<_>>();
-        for scope in self.scopes.values_mut() {
-            scope.define_variables(variables.clone().into_iter());
-        }
-    }
-
-    pub fn get_function(&self, name: &str) -> Option<&Function> {
-        self.scope().get_function(name)
-    }
-
-    pub fn functions(&self) -> impl Iterator<Item=(&String, &Function)> {
-        self.scope().functions()
-    }
-
-    pub fn define_function(&mut self, name: &str, function: Function) {
-        for scope in self.scopes.values_mut() {
-            scope.define_function(name, function.clone());
-        }
-    }
-
-    pub fn define_functions(&mut self, iterator: impl Iterator<Item=(String, Function)>) {
-        let functions = iterator.collect::<Vec<_>>();
-        for scope in self.scopes.values_mut() {
-            scope.define_functions(functions.clone().into_iter());
         }
     }
 }
