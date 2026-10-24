@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-use crate::model::{EnvironmentScope, Function, ResultValue};
-use crate::parsing::{Operator, ParserExpressionTree};
+use crate::model::{EnvironmentScope, Function, ExpressionTree, ResultValue};
+use crate::parsing::{Operator};
 use crate::types::{NumberTypeId, NumberType, NumberTypeError};
 use crate::types::float_type::FloatType;
 use crate::types::int_type::IntType;
@@ -64,7 +64,7 @@ impl ExecutionEngine {
         self.top_level_context.environment.define_function(name, function);
     }
 
-    pub fn execute(&mut self, tree: &ParserExpressionTree) -> Result<ResultValue, ExecutionError> {
+    pub fn execute(&mut self, tree: &ExpressionTree) -> Result<ResultValue, ExecutionError> {
         let mut context = self.top_level_context.child();
         let result = self.execute_internal(&mut context, tree)?;
 
@@ -111,15 +111,15 @@ impl ExecutionEngine {
         }
     }
 
-    fn execute_internal(&self, context: &mut ExecutionContext, tree: &ParserExpressionTree) -> Result<ResultValue, ExecutionError> {
+    fn execute_internal(&self, context: &mut ExecutionContext, tree: &ExpressionTree) -> Result<ResultValue, ExecutionError> {
         match &tree {
-            ParserExpressionTree::Number(value) => {
+            ExpressionTree::Number(value) => {
                 self.number_type().to_value(value).map_err(|err| ExecutionError::Number(err))
             }
-            ParserExpressionTree::Variable(name) => {
+            ExpressionTree::Variable(name) => {
                 context.get_value(name).ok_or_else(|| ExecutionError::VariableNotFound(name.clone()))
             }
-            ParserExpressionTree::BinaryOperator { operator, left, right } => {
+            ExpressionTree::BinaryOperator { operator, left, right } => {
                 let operator = self.number_type().binary_operators().get(operator)
                     .ok_or_else(|| ExecutionError::UndefinedOperator(operator.clone()))?;
 
@@ -128,7 +128,7 @@ impl ExecutionEngine {
 
                 (operator.callback)(left, right).ok_or_else(|| ExecutionError::InvalidOperation)
             }
-            ParserExpressionTree::UnaryOperator { operator, operand } => {
+            ExpressionTree::UnaryOperator { operator, operand } => {
                 let operator = self.number_type().unary_operators().get(operator)
                     .ok_or_else(|| ExecutionError::UndefinedOperator(operator.clone()))?;
 
@@ -136,17 +136,17 @@ impl ExecutionEngine {
 
                 (operator.callback)(operand).ok_or_else(|| ExecutionError::InvalidOperation)
             }
-            ParserExpressionTree::Declaration { left, right } => {
+            ExpressionTree::Declaration { left, right } => {
                 match left.as_ref() {
-                    ParserExpressionTree::Variable(name) => {
+                    ExpressionTree::Variable(name) => {
                         let value = self.execute_internal(context, right)?;
                         context.defined_variables.insert(name.clone(), value.clone());
                         Ok(ResultValue::Empty)
                     }
-                    ParserExpressionTree::Call { name, arguments } => {
+                    ExpressionTree::Call { name, arguments } => {
                         let mut parameters = Vec::new();
                         for argument in arguments {
-                            if let ParserExpressionTree::Variable(parameter) = argument {
+                            if let ExpressionTree::Variable(parameter) = argument {
                                 parameters.push(parameter.clone());
                             } else {
                                 return Err(ExecutionError::ExpectedVariable);
@@ -168,7 +168,7 @@ impl ExecutionEngine {
                     }
                 }
             }
-            ParserExpressionTree::Call { name, arguments } => {
+            ExpressionTree::Call { name, arguments } => {
                 let function = self.top_level_context.environment.get_function(name)
                     .ok_or_else(|| ExecutionError::FunctionNotFound(name.clone()))?;
 

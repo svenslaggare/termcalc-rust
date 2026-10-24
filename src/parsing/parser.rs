@@ -1,4 +1,4 @@
-use crate::parsing::numeric_constant::NumericConstant;
+use crate::model::ExpressionTree;
 use crate::parsing::Operator;
 use crate::parsing::tokenizer::{ParserErrorType, Token, ParserToken, tokenize, ParserError, TokenLocation};
 use crate::parsing::operator::{BinaryOperators, UnaryOperators};
@@ -18,20 +18,12 @@ impl<'a> ParsingContext<'a> {
     }
 }
 
-pub fn parse_str(context: ParsingContext, text: &str) -> ParserResult<ParserExpressionTree> {
+pub fn parse_str(context: ParsingContext, text: &str) -> ParserResult<ExpressionTree> {
     let tokens = tokenize(text)?;
     Parser::new(context.binary_operators, context.unary_operators, tokens).parse()
 }
 
-#[derive(PartialEq, Debug, Clone)]
-pub enum ParserExpressionTree {
-    Number(NumericConstant),
-    Variable(String),
-    BinaryOperator { operator: Operator, left: Box<ParserExpressionTree>, right: Box<ParserExpressionTree> },
-    UnaryOperator { operator: Operator, operand: Box<ParserExpressionTree> },
-    Declaration { left: Box<ParserExpressionTree>, right: Box<ParserExpressionTree> },
-    Call { name: String, arguments: Vec<ParserExpressionTree> }
-}
+
 
 pub type ParserResult<T> = Result<T, ParserError>;
 
@@ -69,17 +61,17 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> ParserResult<ParserExpressionTree>{
+    pub fn parse(&mut self) -> ParserResult<ExpressionTree>{
         self.next()?;
         self.parse_expression_internal()
     }
 
-    fn parse_expression_internal(&mut self) -> ParserResult<ParserExpressionTree>{
+    fn parse_expression_internal(&mut self) -> ParserResult<ExpressionTree>{
         let lhs = self.parse_unary_operator()?;
         self.parse_binary_operator_rhs(0, lhs)
     }
 
-    fn parse_binary_operator_rhs(&mut self, precedence: i32, lhs: ParserExpressionTree) -> ParserResult<ParserExpressionTree>{
+    fn parse_binary_operator_rhs(&mut self, precedence: i32, lhs: ExpressionTree) -> ParserResult<ExpressionTree>{
         let mut lhs = lhs;
         loop {
             let token_precedence = self.get_token_precedence()?;
@@ -99,13 +91,13 @@ impl<'a> Parser<'a> {
 
             match op {
                 Token::Operator(Operator::Single('=')) => {
-                    lhs = ParserExpressionTree::Declaration {
+                    lhs = ExpressionTree::Declaration {
                         left: Box::new(lhs),
                         right: Box::new(rhs)
                     }
                 }
                 Token::Operator(op) => {
-                    lhs = ParserExpressionTree::BinaryOperator {
+                    lhs = ExpressionTree::BinaryOperator {
                         operator: op,
                         left: Box::new(lhs),
                         right: Box::new(rhs)
@@ -132,11 +124,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_primary_expression(&mut self) -> ParserResult<ParserExpressionTree>{
+    fn parse_primary_expression(&mut self) -> ParserResult<ExpressionTree>{
         match self.current().clone() {
             Token::Number(value) => {
                 self.next()?;
-                Ok(ParserExpressionTree::Number(value))
+                Ok(ExpressionTree::Number(value))
             }
             Token::Identifier(identifier) => self.parse_identifier_expression(identifier.clone()),
             Token::LeftParentheses => {
@@ -154,21 +146,21 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_identifier_expression(&mut self, identifier: String) -> ParserResult<ParserExpressionTree>{
+    fn parse_identifier_expression(&mut self, identifier: String) -> ParserResult<ExpressionTree>{
         self.next()?;
 
         match self.current() {
             Token::LeftParentheses => (),
-            _ => return Ok(ParserExpressionTree::Variable(identifier))
+            _ => return Ok(ExpressionTree::Variable(identifier))
         }
 
         self.next()?;
 
         let arguments = self.parse_arguments(Token::RightParentheses)?;
-        Ok(ParserExpressionTree::Call { name: identifier, arguments })
+        Ok(ExpressionTree::Call { name: identifier, arguments })
     }
 
-    fn parse_unary_operator(&mut self) -> ParserResult<ParserExpressionTree>{
+    fn parse_unary_operator(&mut self) -> ParserResult<ExpressionTree>{
         match self.current() {
             Token::Operator(_) => {},
             _ => return self.parse_primary_expression()
@@ -185,14 +177,14 @@ impl<'a> Parser<'a> {
                     return Err(ParserError::new(op_location, ParserErrorType::NotDefinedUnaryOperator(op)));
                 }
 
-                Ok(ParserExpressionTree::UnaryOperator { operator: op, operand: Box::new(operand) })
+                Ok(ExpressionTree::UnaryOperator { operator: op, operand: Box::new(operand) })
             }
             _ => Err(ParserError::new(op_location, ParserErrorType::Unknown))
         }
     }
 
-    fn parse_arguments(&mut self, right_parentheses_token: Token) -> ParserResult<Vec<ParserExpressionTree>> {
-        let mut arguments = Vec::<ParserExpressionTree>::new();
+    fn parse_arguments(&mut self, right_parentheses_token: Token) -> ParserResult<Vec<ExpressionTree>> {
+        let mut arguments = Vec::<ExpressionTree>::new();
 
         match self.current() {
             token if token == &right_parentheses_token => {
@@ -209,7 +201,7 @@ impl<'a> Parser<'a> {
     fn parse_list(
         &mut self,
         right_parentheses_token: Token,
-        list: &mut Vec<ParserExpressionTree>
+        list: &mut Vec<ExpressionTree>
     ) -> ParserResult<()> {
         loop {
             list.push(self.parse_expression_internal()?);
@@ -267,7 +259,7 @@ impl<'a> Parser<'a> {
     }
 }
 
-impl std::fmt::Display for ParserExpressionTree {
+impl std::fmt::Display for ExpressionTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         ParserExpressionTreeDataVisualizer {}.fmt(self, f)
     }
@@ -276,15 +268,15 @@ impl std::fmt::Display for ParserExpressionTree {
 struct ParserExpressionTreeDataVisualizer {}
 
 impl ParserExpressionTreeDataVisualizer {
-    fn fmt(&self, value: &ParserExpressionTree, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, value: &ExpressionTree, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match value {
-            ParserExpressionTree::Number(value) => {
+            ExpressionTree::Number(value) => {
                 write!(f, "{}", value)
             }
-            ParserExpressionTree::Variable(name) => {
+            ExpressionTree::Variable(name) => {
                 write!(f, "{}", name)
             }
-            ParserExpressionTree::BinaryOperator { operator, left, right } => {
+            ExpressionTree::BinaryOperator { operator, left, right } => {
                 write!(f, "(")?;
                 self.fmt(&left, f)?;
                 write!(f, " {} ", operator)?;
@@ -292,12 +284,12 @@ impl ParserExpressionTreeDataVisualizer {
                 write!(f, ")")?;
                 Ok(())
             }
-            ParserExpressionTree::UnaryOperator { operator, operand } => {
+            ExpressionTree::UnaryOperator { operator, operand } => {
                 write!(f, "{}", operator)?;
                 self.fmt(&operand, f)?;
                 Ok(())
             }
-            ParserExpressionTree::Declaration { left, right } => {
+            ExpressionTree::Declaration { left, right } => {
                 write!(f, "(")?;
                 self.fmt(&left, f)?;
                 write!(f, " = ")?;
@@ -305,7 +297,7 @@ impl ParserExpressionTreeDataVisualizer {
                 write!(f, ")")?;
                 Ok(())
             }
-            ParserExpressionTree::Call { name, arguments } => {
+            ExpressionTree::Call { name, arguments } => {
                 write!(f, "{}", name)?;
                 write!(f, "(")?;
                 let mut is_first = true;

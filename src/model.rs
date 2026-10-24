@@ -1,7 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use fnv::FnvHashMap;
-use crate::parsing::ParserExpressionTree;
+
+use crate::parsing::{NumericConstant, Operator};
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]
 pub enum ResultValue {
@@ -70,6 +71,16 @@ impl Display for ResultValue {
     }
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub enum ExpressionTree {
+    Number(NumericConstant),
+    Variable(String),
+    BinaryOperator { operator: Operator, left: Box<ExpressionTree>, right: Box<ExpressionTree> },
+    UnaryOperator { operator: Operator, operand: Box<ExpressionTree> },
+    Declaration { left: Box<ExpressionTree>, right: Box<ExpressionTree> },
+    Call { name: String, arguments: Vec<ExpressionTree> }
+}
+
 #[derive(Clone)]
 pub enum Function {
     Builtin {
@@ -79,7 +90,7 @@ pub enum Function {
     },
     User {
         parameters: Vec<String>,
-        body: ParserExpressionTree
+        body: ExpressionTree
     }
 }
 

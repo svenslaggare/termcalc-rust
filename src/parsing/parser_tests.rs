@@ -1,7 +1,8 @@
+use crate::model::ExpressionTree;
 use crate::parsing::numeric_constant::NumericConstant;
 use crate::parsing::operator::{BinaryOperators, Operator, UnaryOperators};
 use crate::parsing::{parse_str, BinaryOperator, UnaryOperator};
-use crate::parsing::parser::{Parser, ParserExpressionTree, ParsingContext};
+use crate::parsing::parser::{Parser, ParsingContext};
 use crate::parsing::tokenizer::{ParserErrorType, Token};
 
 #[test]
@@ -41,7 +42,7 @@ fn test_parse_values() {
     ).parse().unwrap();
 
     assert_eq!(
-        ParserExpressionTree::Number(NumericConstant::from_i64(4711)),
+        ExpressionTree::Number(NumericConstant::from_i64(4711)),
         tree
     );
 
@@ -55,7 +56,7 @@ fn test_parse_values() {
     ).parse().unwrap();
 
     assert_eq!(
-        ParserExpressionTree::Number(NumericConstant::from_f64(13.37)),
+        ExpressionTree::Number(NumericConstant::from_f64(13.37)),
         tree
     );
 }
