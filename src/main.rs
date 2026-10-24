@@ -13,7 +13,6 @@ fn main() {
     let mut calculator = Calculator::new();
 
     let mut line_editor = DefaultEditor::new().unwrap();
-
     while let Ok(mut line) = line_editor.readline("> ") {
         if line.ends_with('\n') {
             line.pop();

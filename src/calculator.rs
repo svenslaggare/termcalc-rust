@@ -34,6 +34,7 @@ impl Calculator {
         }
 
         let result = self.evaluate(text)?;
+        self.execution.define_variable("ans", result.clone());
         Ok(self.value_to_string(&result))
     }
 
@@ -281,6 +282,7 @@ impl Command {
 fn test_calc1() {
     let mut calculator = Calculator::new();
     assert_eq!(Ok("8.539734222673566".to_string()), calculator.execute("e * pi"));
+    assert_eq!(Some(ResultValue::Float(8.539734222673566)), calculator.execution.get_variable("ans"));
 }
 
 #[test]
