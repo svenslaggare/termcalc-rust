@@ -8,3 +8,6 @@ regex = "1"
 lazy_static = "1"
 fnv = "1"
 tempfile = "3"
+
+rustyline = "18.0.0"
+rustyline-derive = "0.13.0"

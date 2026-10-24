@@ -1,4 +1,4 @@
-use std::io::stdin;
+use rustyline::{DefaultEditor};
 use crate::calculator::Calculator;
 
 mod parsing;
@@ -11,22 +11,22 @@ mod number_helpers;
 fn main() {
     let mut calculator = Calculator::new();
 
-    for line in stdin().lines() {
-        match line {
-            Ok(line) => {
-                match calculator.execute(&line) {
-                    Ok(mut result) => {
-                        if !result.is_empty() {
-                            if !result.ends_with("\n") {
-                                result.push('\n');
-                            }
+    let mut line_editor = DefaultEditor::new().unwrap();
 
-                            print!("{}", result);
-                        }
+    while let Ok(mut line) = line_editor.readline("> ") {
+        if line.ends_with('\n') {
+            line.pop();
+        }
+
+        line_editor.add_history_entry(line.clone()).unwrap();
+        match calculator.execute(&line) {
+            Ok(mut result) => {
+                if !result.is_empty() {
+                    if !result.ends_with("\n") {
+                        result.push('\n');
                     }
-                    Err(err) => {
-                        println!("Error: {}", err);
-                    }
+
+                    print!("{}", result);
                 }
             }
             Err(err) => {
