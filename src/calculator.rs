@@ -33,11 +33,11 @@ impl Calculator {
             }
         }
 
-        let result = self.execute_text(text)?;
+        let result = self.evaluate(text)?;
         Ok(self.value_to_string(&result))
     }
 
-    fn execute_text(&mut self, text: &str) -> CalculationResult<ResultValue> {
+    fn evaluate(&mut self, text: &str) -> CalculationResult<ResultValue> {
         let tree = parse_str(ParsingContext::from_number_type(self.execution.number_type()), text)?;
         let result = self.execution.execute(&tree)?;
         Ok(result)
@@ -123,10 +123,10 @@ impl Calculator {
                 }
             }
             Command::Plot { function, start, end, step } => {
-                let start = self.execute_text(&start)?;
-                let end = self.execute_text(&end)?;
+                let start = self.evaluate(&start)?;
+                let end = self.evaluate(&end)?;
                 let step = match step {
-                    Some(step) => Some(self.execute_text(&step)?),
+                    Some(step) => Some(self.evaluate(&step)?),
                     None => None
                 };
 
@@ -159,7 +159,6 @@ pub enum CalculationError {
     Execution(ExecutionError),
     InvalidOutputBase,
     GnuPlotNotFound,
-    InvalidNumberType,
     InternalError
 }
 
@@ -168,9 +167,8 @@ impl Display for CalculationError {
         match self {
             CalculationError::Parser(error) => write!(f, "{}", error.error),
             CalculationError::Execution(error) => write!(f, "{}", error),
-            CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36."),
+            CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36"),
             CalculationError::GnuPlotNotFound => write!(f, "Please install 'gnuplot' to enable plotting"),
-            CalculationError::InvalidNumberType => write!(f, "Incorrect number type"),
             CalculationError::InternalError => write!(f, "Internal error")
         }
     }
