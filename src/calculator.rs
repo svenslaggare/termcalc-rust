@@ -124,13 +124,19 @@ impl Calculator {
                     Err(CalculationError::InvalidOutputBase)
                 }
             }
-            Command::Plot { function, start, end } => {
+            Command::Plot { function, start, end, step } => {
                 let start = self.execute_text(&start)?;
                 let end = self.execute_text(&end)?;
+                let step = match step {
+                    Some(step) => Some(self.execute_text(&step)?),
+                    None => None
+                };
+
                 GnuPlotter {
                     function: &function,
                     start,
-                    end
+                    end,
+                    step
                 }.plot(&self.execution)
             }
         }
@@ -194,7 +200,8 @@ impl From<ExecutionError> for CalculationError {
 struct GnuPlotter<'a> {
     function: &'a str,
     start: ResultValue,
-    end: ResultValue
+    end: ResultValue,
+    step: Option<ResultValue>
 }
 
 impl<'a> GnuPlotter<'a> {
@@ -206,12 +213,14 @@ impl<'a> GnuPlotter<'a> {
 
         match (&self.start, &self.end) {
             (ResultValue::Float(start), ResultValue::Float(end)) => {
-                for (x, y) in execution.execute_function(function, float_range(*start, *end, 0.01).map(|x| [ResultValue::Float(x)]))? {
+                let step = self.step.as_ref().map(|x| x.as_f64()).flatten().unwrap_or((end - start) / 100.0);
+                for (x, y) in execution.execute_function(function, float_range(*start, *end, step).map(|x| [ResultValue::Float(x)]))? {
                     plot_data_file.write_all(format!("{};{}\n", x[0], y).as_bytes()).map_err(|_| CalculationError::InternalError)?;
                 }
             }
             (ResultValue::Int(start), ResultValue::Int(end)) => {
-                for (x, y) in execution.execute_function(function, (*start..*end + 1).map(|x| [ResultValue::Int(x)]))? {
+                let step = self.step.as_ref().map(|x| x.as_i64()).flatten().unwrap_or(1);
+                for (x, y) in execution.execute_function(function, (*start..*end + step).map(|x| [ResultValue::Int(x)]))? {
                     plot_data_file.write_all(format!("{};{}\n", x[0], y).as_bytes()).map_err(|_| CalculationError::InternalError)?;
                 }
             }
@@ -249,7 +258,7 @@ enum Command {
     ShowVariables,
     ShowFunctions,
     DisplayBase(u32),
-    Plot { function: String, start: String, end: String }
+    Plot { function: String, start: String, end: String, step: Option<String> }
 }
 
 enum CommandError {
@@ -300,7 +309,8 @@ impl Command {
                     let function = next_part()?.to_owned();
                     let start = next_part()?.to_owned();
                     let end = next_part()?.to_owned();
-                    return Ok(Command::Plot { function, start, end })
+                    let step = next_part().ok().map(|x| x.to_owned());
+                    return Ok(Command::Plot { function, start, end, step })
                 }
                 _ => {}
             }
