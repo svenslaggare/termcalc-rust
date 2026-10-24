@@ -1,7 +1,7 @@
 use crate::parsing::numeric_constant::NumericConstant;
 use crate::parsing::operator::{BinaryOperators, Operator, UnaryOperators};
 use crate::parsing::{parse_str, BinaryOperator, UnaryOperator};
-use crate::parsing::parser::{Parser, ParserExpressionTreeData, ParsingContext};
+use crate::parsing::parser::{Parser, ParserExpressionTree, ParsingContext};
 use crate::parsing::tokenizer::{ParserErrorType, Token};
 
 #[test]
@@ -38,10 +38,10 @@ fn test_parse_values() {
             Token::Number(NumericConstant::from_i64(4711)),
             Token::End
         ]
-    ).parse().unwrap().tree;
+    ).parse().unwrap();
 
     assert_eq!(
-        ParserExpressionTreeData::Number(NumericConstant::from_i64(4711)),
+        ParserExpressionTree::Number(NumericConstant::from_i64(4711)),
         tree
     );
 
@@ -52,10 +52,10 @@ fn test_parse_values() {
             Token::Number(NumericConstant::from_f64(13.37)),
             Token::End
         ]
-    ).parse().unwrap().tree;
+    ).parse().unwrap();
 
     assert_eq!(
-        ParserExpressionTreeData::Number(NumericConstant::from_f64(13.37)),
+        ParserExpressionTree::Number(NumericConstant::from_f64(13.37)),
         tree
     );
 }
@@ -71,7 +71,7 @@ fn test_parse_expression1() {
     };
 
     let tree = parse_str(context, "a + 4").unwrap();
-    assert_eq!("(a + 4)", tree.tree.to_string());
+    assert_eq!("(a + 4)", tree.to_string());
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn test_parse_expression2() {
     };
 
     let tree = parse_str(context, "(a + 4) * b").unwrap();
-    assert_eq!("((a + 4) * b)", tree.tree.to_string());
+    assert_eq!("((a + 4) * b)", tree.to_string());
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn test_parse_expression3() {
     };
 
     let tree = parse_str(context, "-4").unwrap();
-    assert_eq!("-4", tree.tree.to_string());
+    assert_eq!("-4", tree.to_string());
 }
 
 #[test]
@@ -113,7 +113,7 @@ fn test_parse_expression4() {
     };
 
     let tree = parse_str(context, "2^8").unwrap();
-    assert_eq!("(2 ^ 8)", tree.tree.to_string());
+    assert_eq!("(2 ^ 8)", tree.to_string());
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn test_parse_expression5() {
     };
 
     let tree = parse_str(context, "2^(a + 8)").unwrap();
-    assert_eq!("(2 ^ (a + 8))", tree.tree.to_string());
+    assert_eq!("(2 ^ (a + 8))", tree.to_string());
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn test_parse_call1() {
     };
 
     let tree = parse_str(context, "f(4, a)").unwrap();
-    assert_eq!("f(4, a)", tree.tree.to_string());
+    assert_eq!("f(4, a)", tree.to_string());
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn test_parse_call2() {
     };
 
     let tree = parse_str(context, "f(g(b, c), a)").unwrap();
-    assert_eq!("f(g(b, c), a)", tree.tree.to_string());
+    assert_eq!("f(g(b, c), a)", tree.to_string());
 }
 
 fn test_binary_operators() -> BinaryOperators {

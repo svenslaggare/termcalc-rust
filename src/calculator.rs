@@ -121,7 +121,7 @@ impl Calculator {
                             function.parameters().join(", "),
                             match function {
                                 Function::Builtin { .. } => String::new(),
-                                Function::User { body, .. } => body.tree.to_string()
+                                Function::User { body, .. } => body.to_string()
                             }
                         ).unwrap();
                     }

@@ -1,7 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 use fnv::FnvHashMap;
-
 use crate::parsing::ParserExpressionTree;
 
 #[derive(PartialEq, PartialOrd, Debug, Clone)]

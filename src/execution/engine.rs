@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
 use crate::model::{EnvironmentScope, Function, ResultValue};
-use crate::parsing::{Operator, ParserExpressionTree, ParserExpressionTreeData};
+use crate::parsing::{Operator, ParserExpressionTree};
 use crate::types::{NumberTypeId, NumberType, NumberTypeError};
 use crate::types::float_type::FloatType;
 use crate::types::int_type::IntType;
@@ -112,14 +112,14 @@ impl ExecutionEngine {
     }
 
     fn execute_internal(&self, context: &mut ExecutionContext, tree: &ParserExpressionTree) -> Result<ResultValue, ExecutionError> {
-        match &tree.tree {
-            ParserExpressionTreeData::Number(value) => {
+        match &tree {
+            ParserExpressionTree::Number(value) => {
                 self.number_type().to_value(value).map_err(|err| ExecutionError::Number(err))
             }
-            ParserExpressionTreeData::Variable(name) => {
+            ParserExpressionTree::Variable(name) => {
                 context.get_value(name).ok_or_else(|| ExecutionError::VariableNotFound(name.clone()))
             }
-            ParserExpressionTreeData::BinaryOperator { operator, left, right } => {
+            ParserExpressionTree::BinaryOperator { operator, left, right } => {
                 let operator = self.number_type().binary_operators().get(operator)
                     .ok_or_else(|| ExecutionError::UndefinedOperator(operator.clone()))?;
 
@@ -128,7 +128,7 @@ impl ExecutionEngine {
 
                 (operator.callback)(left, right).ok_or_else(|| ExecutionError::InvalidOperation)
             }
-            ParserExpressionTreeData::UnaryOperator { operator, operand } => {
+            ParserExpressionTree::UnaryOperator { operator, operand } => {
                 let operator = self.number_type().unary_operators().get(operator)
                     .ok_or_else(|| ExecutionError::UndefinedOperator(operator.clone()))?;
 
@@ -136,17 +136,17 @@ impl ExecutionEngine {
 
                 (operator.callback)(operand).ok_or_else(|| ExecutionError::InvalidOperation)
             }
-            ParserExpressionTreeData::Declaration { left, right } => {
-                match &left.tree {
-                    ParserExpressionTreeData::Variable(name) => {
+            ParserExpressionTree::Declaration { left, right } => {
+                match left.as_ref() {
+                    ParserExpressionTree::Variable(name) => {
                         let value = self.execute_internal(context, right)?;
                         context.defined_variables.insert(name.clone(), value.clone());
                         Ok(ResultValue::Empty)
                     }
-                    ParserExpressionTreeData::Call { name, arguments } => {
+                    ParserExpressionTree::Call { name, arguments } => {
                         let mut parameters = Vec::new();
                         for argument in arguments {
-                            if let ParserExpressionTreeData::Variable(parameter) = &argument.tree {
+                            if let ParserExpressionTree::Variable(parameter) = argument {
                                 parameters.push(parameter.clone());
                             } else {
                                 return Err(ExecutionError::ExpectedVariable);
@@ -168,7 +168,7 @@ impl ExecutionEngine {
                     }
                 }
             }
-            ParserExpressionTreeData::Call { name, arguments } => {
+            ParserExpressionTree::Call { name, arguments } => {
                 let function = self.top_level_context.environment.get_function(name)
                     .ok_or_else(|| ExecutionError::FunctionNotFound(name.clone()))?;
 
