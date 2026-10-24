@@ -51,11 +51,12 @@ impl Calculator {
             Command::Help => {
                 Ok(
                 r#"Commands:
-:exit|:q|:quit     Exits the program.
-:mode              Sets the evaluation mode: float (default), int.
-:display           Sets to display the result in the given base.
-:vars              Prints the defined variables.
-:funcs             Prints the defined functions."#.to_owned()
+:exit|:q|:quit                              Exits the program.
+:mode mode                                  Sets the evaluation mode: float (default), int.
+:display base                               Sets to display the result in the given base.
+:vars                                       Prints the defined variables.
+:funcs                                      Prints the defined functions.
+:plot func start end step (optional)        Plots a function using gnuplot."#.to_owned()
                 )
             }
             Command::Mode(number_type) => {
