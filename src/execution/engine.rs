@@ -252,7 +252,8 @@ pub enum ExecutionError {
     InvalidOperation,
     InvalidDeclaration,
     ExpectedVariable,
-    InvalidCallArguments { expected: usize, actual: usize }
+    InvalidCallArguments { expected: usize, actual: usize },
+    MixedTypes
 }
 
 impl Display for ExecutionError {
@@ -265,7 +266,8 @@ impl Display for ExecutionError {
             ExecutionError::InvalidOperation => write!(f, "Invalid operation"),
             ExecutionError::InvalidDeclaration => write!(f, "Invalid declaration"),
             ExecutionError::ExpectedVariable => write!(f, "Expected a variable"),
-            ExecutionError::InvalidCallArguments { expected, actual } => write!(f, "Expected {} arguments but got {}", expected, actual)
+            ExecutionError::InvalidCallArguments { expected, actual } => write!(f, "Expected {} arguments but got {}", expected, actual),
+            ExecutionError::MixedTypes => write!(f, "Mixed int and float types")
         }
     }
 }

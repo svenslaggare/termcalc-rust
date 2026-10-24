@@ -7,6 +7,7 @@ mod types;
 mod model;
 mod calculator;
 mod number_helpers;
+mod plot;
 
 fn main() {
     let mut calculator = Calculator::new();

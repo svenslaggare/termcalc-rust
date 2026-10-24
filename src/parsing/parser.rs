@@ -55,32 +55,6 @@ impl ParserExpressionTreeData {
             tree: self
         }
     }
-
-    pub fn visit<'a, E, F: FnMut(&'a ParserExpressionTreeData) -> Result<(), E>>(&'a self, f: &mut F) -> Result<(), E> {
-        match self {
-            ParserExpressionTreeData::Number(_) => {}
-            ParserExpressionTreeData::Variable(_) => {}
-            ParserExpressionTreeData::BinaryOperator { left, right, .. } => {
-                left.tree.visit(f)?;
-                right.tree.visit(f)?;
-            }
-            ParserExpressionTreeData::UnaryOperator { operand, .. } => {
-                operand.tree.visit(f)?;
-            }
-            ParserExpressionTreeData::Declaration { left, right } => {
-                left.tree.visit(f)?;
-                right.tree.visit(f)?;
-            }
-            ParserExpressionTreeData::Call { arguments, .. } => {
-                for arg in arguments {
-                    arg.tree.visit(f)?;
-                }
-            }
-        }
-
-        f(self)?;
-        Ok(())
-    }
 }
 
 pub type ParserResult<T> = Result<T, ParserError>;
