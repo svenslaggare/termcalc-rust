@@ -1,5 +1,5 @@
 use rustyline::{DefaultEditor};
-use crate::calculator::Calculator;
+use crate::calculator::{CalculationError, Calculator};
 
 mod parsing;
 mod execution;
@@ -29,6 +29,9 @@ fn main() {
 
                     print!("{}", result);
                 }
+            }
+            Err(CalculationError::Exit) => {
+                break;
             }
             Err(err) => {
                 println!("Error: {}", err);

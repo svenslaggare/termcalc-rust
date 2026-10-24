@@ -45,6 +45,19 @@ impl Calculator {
 
     fn handle_command(&mut self, command: Command) -> CalculationResult<String> {
         match command {
+            Command::Exit => {
+                Err(CalculationError::Exit)
+            }
+            Command::Help => {
+                Ok(
+                r#"Commands:
+:exit|:q|:quit     Exits the program.
+:mode              Sets the evaluation mode: float (default), int.
+:display           Sets to display the result in the given base.
+:vars              Prints the defined variables.
+:funcs             Prints the defined functions."#.to_owned()
+                )
+            }
             Command::Mode(number_type) => {
                 self.execution.set_number_type(number_type);
                 Ok(String::new())
@@ -155,6 +168,7 @@ pub type CalculationResult<T> = Result<T, CalculationError>;
 
 #[derive(Debug, PartialEq)]
 pub enum CalculationError {
+    Exit,
     Parser(ParserError),
     Execution(ExecutionError),
     InvalidOutputBase,
@@ -165,6 +179,7 @@ pub enum CalculationError {
 impl Display for CalculationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            CalculationError::Exit => write!(f, "Exiting..."),
             CalculationError::Parser(error) => write!(f, "{}", error.error),
             CalculationError::Execution(error) => write!(f, "{}", error),
             CalculationError::InvalidOutputBase => write!(f, "The base must be >= 2 and <= 36"),
@@ -187,6 +202,8 @@ impl From<ExecutionError> for CalculationError {
 }
 
 enum Command {
+    Exit,
+    Help,
     Mode(NumberTypeId),
     ShowVariables,
     ShowFunctions,
@@ -224,6 +241,12 @@ impl Command {
 
             let command = next_part()?;
             match command {
+                "exit" | "quit" | "q" => {
+                    return Ok(Command::Exit);
+                }
+                "help" => {
+                    return Ok(Command::Help);
+                }
                 "mode" => {
                     let number_type = NumberTypeId::from_str(next_part()?).ok_or_else(|| CommandError::InvalidNumberType)?;
                     return Ok(Command::Mode(number_type));
