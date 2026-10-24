@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use fnv::FnvHashMap;
 
 use crate::model::{Function, ResultValue};
@@ -6,7 +5,7 @@ use crate::types::NumberTypeId;
 
 #[derive(Clone)]
 pub struct Environment {
-    scopes: HashMap<NumberTypeId, EnvironmentScope>,
+    scopes: FnvHashMap<NumberTypeId, EnvironmentScope>,
     active: NumberTypeId
 }
 
@@ -16,14 +15,14 @@ impl Environment {
         active: NumberTypeId
     ) -> Environment {
         Environment {
-            scopes: HashMap::from_iter(scopes),
+            scopes: FnvHashMap::from_iter(scopes),
             active
         }
     }
 
     pub fn empty(number_types: impl Iterator<Item=NumberTypeId>, active: NumberTypeId) -> Environment {
         Environment {
-            scopes: HashMap::from_iter(number_types.map(|number_type| (number_type, EnvironmentScope::new(Vec::new(), Vec::new())))),
+            scopes: FnvHashMap::from_iter(number_types.map(|number_type| (number_type, EnvironmentScope::new(Vec::new(), Vec::new())))),
             active
         }
     }
