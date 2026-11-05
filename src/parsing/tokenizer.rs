@@ -257,8 +257,8 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
             };
 
             let mut has_dot = false;
-            let mut inside_exponent = true;
             let mut has_minus_sign = false;
+            let mut prev_was_exponent = false;
 
             loop {
                 match state.peek_char() {
@@ -273,9 +273,10 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
                     }
                     Some('E') if has_dot => {
                         chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
-                        inside_exponent = true;
+                        prev_was_exponent = true;
+                        continue;
                     }
-                    Some('-') if inside_exponent && !has_minus_sign => {
+                    Some('-') if prev_was_exponent && !has_minus_sign => {
                         chars.push(NumericConstantChar::from_char(state.next_char().unwrap()).unwrap());
                         has_minus_sign = true;
                     }
@@ -291,6 +292,8 @@ pub fn tokenize(text: &str) -> Result<Vec<ParserToken>, ParserError> {
                         break
                     }
                 };
+
+                prev_was_exponent = false;
             }
 
             state.add(Token::Number(NumericConstant::new(chars, base)))
@@ -334,21 +337,11 @@ fn is_hex_digit(current: char) -> bool {
 }
 
 #[test]
-fn test_tokenize1() {
-    let tokens = tokenize_simple("a1 + b + caba + 134 + 12 + 0");
+fn test_tokenize_int1() {
+    let tokens = tokenize_simple("4711");
     assert_eq!(
         vec![
-            Token::Identifier("a1".to_string()),
-            Token::Operator(Operator::Single('+')),
-            Token::Identifier("b".to_string()),
-            Token::Operator(Operator::Single('+')),
-            Token::Identifier("caba".to_string()),
-            Token::Operator(Operator::Single('+')),
-            Token::Number(NumericConstant::from_i64(134)),
-            Token::Operator(Operator::Single('+')),
-            Token::Number(NumericConstant::from_i64(12)),
-            Token::Operator(Operator::Single('+')),
-            Token::Number(NumericConstant::from_i64(0)),
+            Token::Number(NumericConstant::from_i64(4711)),
             Token::End
         ],
         tokens.unwrap()
@@ -356,54 +349,7 @@ fn test_tokenize1() {
 }
 
 #[test]
-fn test_tokenize2() {
-    let tokens = tokenize_simple("f(a, b, 4)");
-    assert_eq!(
-        vec![
-            Token::Identifier("f".to_string()),
-            Token::LeftParentheses,
-            Token::Identifier("a".to_string()),
-            Token::Comma,
-            Token::Identifier("b".to_string()),
-            Token::Comma,
-            Token::Number(NumericConstant::from_i64(4)),
-            Token::RightParentheses,
-            Token::End
-        ],
-        tokens.unwrap()
-    );
-}
-
-#[test]
-fn test_tokenize3() {
-    let tokens = tokenize_simple("a + 4");
-    assert_eq!(
-        vec![
-            Token::Identifier("a".to_string()),
-            Token::Operator(Operator::Single('+')),
-            Token::Number(NumericConstant::from_i64(4)),
-            Token::End
-        ],
-        tokens.unwrap()
-    );
-}
-
-#[test]
-fn test_tokenize4() {
-    let tokens = tokenize_simple("a <= 4");
-    assert_eq!(
-        vec![
-            Token::Identifier("a".to_string()),
-            Token::Operator(Operator::Dual('<', '=')),
-            Token::Number(NumericConstant::from_i64(4)),
-            Token::End
-        ],
-        tokens.unwrap()
-    );
-}
-
-#[test]
-fn test_tokenize6() {
+fn test_tokenize_float1() {
     let tokens = tokenize_simple("4.0");
     assert_eq!(
         vec![
@@ -415,7 +361,7 @@ fn test_tokenize6() {
 }
 
 #[test]
-fn test_tokenize7() {
+fn test_tokenize_scientific_notation1() {
     let tokens = tokenize_simple("13.37E6");
     assert_eq!(
         vec![
@@ -438,7 +384,7 @@ fn test_tokenize7() {
 }
 
 #[test]
-fn test_tokenize8() {
+fn test_tokenize_scientific_notation2() {
     let tokens = tokenize_simple("1.0E-3");
     assert_eq!(
         vec![
@@ -460,7 +406,7 @@ fn test_tokenize8() {
 }
 
 #[test]
-fn test_tokenize10() {
+fn test_tokenize_number_base1() {
     let tokens = tokenize_simple("0xFF");
     assert_eq!(
         vec![
@@ -472,11 +418,144 @@ fn test_tokenize10() {
 }
 
 #[test]
-fn test_tokenize11() {
+fn test_tokenize_number_base2() {
     let tokens = tokenize_simple("0b101");
     assert_eq!(
         vec![
             Token::Number(NumericConstant::new(vec![NumericConstantChar::One, NumericConstantChar::Zero, NumericConstantChar::One], 2)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression1() {
+    let tokens = tokenize_simple("a1 + b + caba + 134 + 12 + 0");
+    assert_eq!(
+        vec![
+            Token::Identifier("a1".to_string()),
+            Token::Operator(Operator::Single('+')),
+            Token::Identifier("b".to_string()),
+            Token::Operator(Operator::Single('+')),
+            Token::Identifier("caba".to_string()),
+            Token::Operator(Operator::Single('+')),
+            Token::Number(NumericConstant::from_i64(134)),
+            Token::Operator(Operator::Single('+')),
+            Token::Number(NumericConstant::from_i64(12)),
+            Token::Operator(Operator::Single('+')),
+            Token::Number(NumericConstant::from_i64(0)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression2() {
+    let tokens = tokenize_simple("f(a, b, 4)");
+    assert_eq!(
+        vec![
+            Token::Identifier("f".to_string()),
+            Token::LeftParentheses,
+            Token::Identifier("a".to_string()),
+            Token::Comma,
+            Token::Identifier("b".to_string()),
+            Token::Comma,
+            Token::Number(NumericConstant::from_i64(4)),
+            Token::RightParentheses,
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression3() {
+    let tokens = tokenize_simple("a + 4");
+    assert_eq!(
+        vec![
+            Token::Identifier("a".to_string()),
+            Token::Operator(Operator::Single('+')),
+            Token::Number(NumericConstant::from_i64(4)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression4() {
+    let tokens = tokenize_simple("a <= 4");
+    assert_eq!(
+        vec![
+            Token::Identifier("a".to_string()),
+            Token::Operator(Operator::Dual('<', '=')),
+            Token::Number(NumericConstant::from_i64(4)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression5() {
+    let tokens = tokenize_simple("10-5");
+    assert_eq!(
+        vec![
+            Token::Number(NumericConstant::from_i64(10)),
+            Token::Operator(Operator::Single('-')),
+            Token::Number(NumericConstant::from_i64(5)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression6() {
+    let tokens = tokenize_simple("13.37E6 - 4.0");
+    assert_eq!(
+        vec![
+            Token::Number(NumericConstant::new(
+                vec![
+                    NumericConstantChar::One,
+                    NumericConstantChar::Three,
+                    NumericConstantChar::DecimalPoint,
+                    NumericConstantChar::Three,
+                    NumericConstantChar::Seven,
+                    NumericConstantChar::Exponent,
+                    NumericConstantChar::Six,
+                ],
+                10
+            )),
+            Token::Operator(Operator::Single('-')),
+            Token::Number(NumericConstant::from_f64(4.0)),
+            Token::End
+        ],
+        tokens.unwrap()
+    );
+}
+
+#[test]
+fn test_tokenize_expression7() {
+    let tokens = tokenize_simple("13.37E6-4.0");
+    assert_eq!(
+        vec![
+            Token::Number(NumericConstant::new(
+                vec![
+                    NumericConstantChar::One,
+                    NumericConstantChar::Three,
+                    NumericConstantChar::DecimalPoint,
+                    NumericConstantChar::Three,
+                    NumericConstantChar::Seven,
+                    NumericConstantChar::Exponent,
+                    NumericConstantChar::Six,
+                ],
+                10
+            )),
+            Token::Operator(Operator::Single('-')),
+            Token::Number(NumericConstant::from_f64(4.0)),
             Token::End
         ],
         tokens.unwrap()

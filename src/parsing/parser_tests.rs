@@ -132,6 +132,20 @@ fn test_parse_expression5() {
 }
 
 #[test]
+fn test_parse_expression6() {
+    let binary_operators = test_binary_operators();
+    let unary_operators = test_unary_operators();
+
+    let context = ParsingContext {
+        binary_operators: &binary_operators,
+        unary_operators: &unary_operators
+    };
+
+    let tree = parse_str(context, "10-5").unwrap();
+    assert_eq!("(10 - 5)", tree.to_string());
+}
+
+#[test]
 fn test_parse_call1() {
     let binary_operators = test_binary_operators();
     let unary_operators = test_unary_operators();

@@ -284,3 +284,11 @@ fn test_to_value4() {
         ))
     );
 }
+
+#[test]
+fn test_to_value5() {
+    assert_eq!(
+        Ok(ResultValue::Float(-10.0)),
+        FloatType::new().to_value(&NumericConstant::new(vec![NumericConstantChar::MinusSign, NumericConstantChar::One, NumericConstantChar::Zero], 10))
+    );
+}

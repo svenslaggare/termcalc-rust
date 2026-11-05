@@ -97,3 +97,11 @@ fn test_to_value2() {
         IntType::new().to_value(&NumericConstant::new(vec![NumericConstantChar::F, NumericConstantChar::F], 16))
     );
 }
+
+#[test]
+fn test_to_value3() {
+    assert_eq!(
+        Ok(ResultValue::Int(-10)),
+        IntType::new().to_value(&NumericConstant::new(vec![NumericConstantChar::MinusSign, NumericConstantChar::One, NumericConstantChar::Zero], 10))
+    );
+}

@@ -290,6 +290,11 @@ fn test_int1() {
     );
 
     assert_eq!(
+        Ok(ResultValue::Int(5)),
+        engine.execute(&parse_str(ParsingContext::from_number_type(engine.number_type()), "10-5").unwrap())
+    );
+
+    assert_eq!(
         Ok(ResultValue::Int(-10)),
         engine.execute(&parse_str(ParsingContext::from_number_type(engine.number_type()), "-(3 + 7)").unwrap())
     );
